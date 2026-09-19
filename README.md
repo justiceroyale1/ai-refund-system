@@ -9,13 +9,16 @@ This project is a production-minded demonstration of an AI-assisted e-commerce r
 ├── backend/             # Laravel API and domain application
 ├── frontend/            # Nuxt customer and admin applications
 ├── docker/              # Container definitions and entrypoints
-├── docker-compose.yml   # Local multi-service runtime
-└── .env.example         # Safe local configuration template
+│   ├── backend/
+│   │   └── .env.example # Safe backend configuration template
+│   └── frontend/
+│       └── .env.example # Safe frontend configuration template
+└── docker-compose.yml   # Local multi-service runtime
 ```
 
-## Planned runtime
+## Local runtime
 
-The completed local stack will contain separate services for:
+The local stack contains separate services for:
 
 - Laravel backend;
 - Nuxt frontend;
@@ -25,18 +28,43 @@ The completed local stack will contain separate services for:
 - Laravel Reverb;
 - Laravel Scheduler.
 
-The target startup command is:
+Start the stack with:
 
 ```bash
-docker compose up --build
+./docker/start.sh
 ```
 
-## Bootstrap status
+The startup script creates both ignored service environment files before Compose loads them:
 
-This repository currently contains only the approved top-level skeleton. Laravel, Nuxt, and the working container runtime are added by subsequent implementation tasks. The startup command above is therefore a target contract and is not expected to run the application at this checkpoint.
+- Edit `docker/backend/.env` to change Laravel, PostgreSQL, Redis, queue, Reverb, AI provider, and related backend settings.
+- Edit `docker/frontend/.env` to change Nuxt public runtime settings and the published frontend port.
+
+Their safe templates are `docker/backend/.env.example` and `docker/frontend/.env.example`. Rerun the startup script after an environment change so Compose recreates affected containers with the new values.
+
+The Laravel application directory intentionally contains neither `.env` nor `.env.example`. The backend image build verifies that neither file is copied into `/var/www/html`; Laravel receives its configuration exclusively through the Docker service environment.
+
+The application endpoints are:
+
+- Nuxt frontend: `http://localhost:3000`
+- Laravel backend: `http://localhost:8000`
+- Reverb WebSocket server: `ws://localhost:8080`
+- Horizon dashboard: `http://localhost:8000/horizon`
+
+PostgreSQL is published on `5432` and Redis on `6380` for local development tools. The Redis container still listens on `6379` inside the Compose network. Override `POSTGRES_PORT` or `REDIS_FORWARD_PORT` in `docker/backend/.env` when those host ports are already occupied.
+
+The backend container applies outstanding migrations before it starts serving requests. PostgreSQL data, Redis data, and Laravel runtime storage use named volumes.
+
+## Runtime inspection
+
+Check all seven services and follow their logs with:
+
+```bash
+docker compose ps
+docker compose logs --tail=100 backend frontend postgres redis horizon reverb scheduler
+```
 
 ## Configuration safety
 
-Copy `.env.example` to `.env` only for local development. Replace placeholder values locally and never commit real Gemini credentials, application keys, Reverb secrets, or production database credentials.
+The generated `docker/backend/.env` and `docker/frontend/.env` files are the local Docker environment files. Replace placeholder values there and never commit real Gemini credentials, application keys, Reverb secrets, or production database credentials.
 
 Full setup, architecture, testing, security, and walkthrough documentation will be completed alongside the application.

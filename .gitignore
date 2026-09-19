@@ -45,4 +45,6 @@ frontend/test-results/
 
 # Local Docker data or overrides
 docker-compose.override.yml
+docker/backend/.env
+docker/frontend/.env
 .docker/
