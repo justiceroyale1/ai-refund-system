@@ -1,0 +1,6 @@
+name: ai-refund-system
+
+# Runtime services are added after the Laravel and Nuxt applications exist.
+# Keeping an explicit empty map makes this a valid Compose skeleton without
+# pretending that the application is bootable at this checkpoint.
+services: {}
