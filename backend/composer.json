@@ -14,6 +14,7 @@
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
+        "larastan/larastan": "^3.12",
         "laravel/boost": "^2.7",
         "laravel/pail": "^1.2.5",
         "laravel/pao": "^1.0.6",
@@ -35,6 +36,7 @@
         }
     },
     "scripts": {
+        "analyse": "@php vendor/bin/phpstan analyse --memory-limit=1G",
         "setup": [
             "composer install",
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
@@ -46,6 +48,12 @@
         "dev": [
             "Composer\\Config::disableProcessTimeout",
             "@php artisan dev"
+        ],
+        "format": "@php vendor/bin/pint --format agent",
+        "quality": [
+            "@format",
+            "@analyse",
+            "@test"
         ],
         "test": [
             "@php artisan config:clear --ansi @no_additional_args",

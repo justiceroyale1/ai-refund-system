@@ -1,9 +1,16 @@
 <?php
 
+use App\Enums\Http\ApiErrorCode;
+use App\Http\Responses\ApiErrorResponse;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -17,6 +24,57 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
+            fn (Request $request, Throwable $exception): bool => ApiErrorResponse::shouldRender($request),
         );
+
+        $exceptions->render(function (ValidationException $exception, Request $request): ?JsonResponse {
+            if (! ApiErrorResponse::shouldRender($request)) {
+                return null;
+            }
+
+            return ApiErrorResponse::make(
+                ApiErrorCode::ValidationFailed,
+                ApiErrorCode::ValidationFailed->defaultMessage(),
+                ['errors' => $exception->errors()],
+                $exception->status,
+            );
+        });
+
+        $exceptions->render(function (AuthenticationException $exception, Request $request): ?JsonResponse {
+            if (! ApiErrorResponse::shouldRender($request)) {
+                return null;
+            }
+
+            return ApiErrorResponse::make(
+                ApiErrorCode::Unauthenticated,
+                ApiErrorCode::Unauthenticated->defaultMessage(),
+                status: 401,
+            );
+        });
+
+        $exceptions->render(function (HttpExceptionInterface $exception, Request $request): ?JsonResponse {
+            if (! ApiErrorResponse::shouldRender($request)) {
+                return null;
+            }
+
+            $code = ApiErrorCode::fromStatus($exception->getStatusCode());
+
+            return ApiErrorResponse::make(
+                $code,
+                $code->defaultMessage(),
+                status: $exception->getStatusCode(),
+                headers: $exception->getHeaders(),
+            );
+        });
+
+        $exceptions->render(function (Throwable $exception, Request $request): ?JsonResponse {
+            if ($exception instanceof HttpResponseException || ! ApiErrorResponse::shouldRender($request)) {
+                return null;
+            }
+
+            return ApiErrorResponse::make(
+                ApiErrorCode::InternalServerError,
+                ApiErrorCode::InternalServerError->defaultMessage(),
+            );
+        });
     })->create();

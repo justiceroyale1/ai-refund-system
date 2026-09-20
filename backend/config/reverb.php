@@ -1,5 +1,10 @@
 <?php
 
+$allowedOrigins = env('REVERB_ALLOWED_ORIGINS');
+$allowedOrigins = is_string($allowedOrigins) && $allowedOrigins !== ''
+    ? $allowedOrigins
+    : 'localhost,127.0.0.1';
+
 return [
 
     /*
@@ -84,7 +89,7 @@ return [
                 ],
                 'allowed_origins' => array_filter(array_map(
                     'trim',
-                    explode(',', env('REVERB_ALLOWED_ORIGINS', 'localhost,127.0.0.1')),
+                    explode(',', $allowedOrigins),
                 )),
                 'ping_interval' => env('REVERB_APP_PING_INTERVAL', 60),
                 'activity_timeout' => env('REVERB_APP_ACTIVITY_TIMEOUT', 30),
