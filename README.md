@@ -7,6 +7,7 @@ This project is a production-minded demonstration of an AI-assisted e-commerce r
 ```text
 .
 ├── backend/             # Laravel API and domain application
+│   └── .env.example     # Safe host-level Laravel template
 ├── frontend/            # Nuxt customer and admin applications
 ├── docker/              # Container definitions and entrypoints
 │   ├── backend/
@@ -41,7 +42,15 @@ The startup script creates both ignored service environment files before Compose
 
 Their safe templates are `docker/backend/.env.example` and `docker/frontend/.env.example`. Rerun the startup script after an environment change so Compose recreates affected containers with the new values.
 
-The Laravel application directory intentionally contains neither `.env` nor `.env.example`. The backend image build verifies that neither file is copied into `/var/www/html`; Laravel receives its configuration exclusively through the Docker service environment.
+For host-level Laravel commands and tests, the backend directory contains the safe, tracked `backend/.env.example` template. Create the ignored local environment file when it is missing:
+
+```bash
+cp backend/.env.example backend/.env
+cd backend
+composer quality
+```
+
+Host-level PHPUnit settings override the service connections with isolated test configuration. Docker Compose continues to load `docker/backend/.env`; keep the two safe backend templates aligned when shared variables change. The backend image build excludes both `backend/.env` and `backend/.env.example`, so containers still receive runtime configuration exclusively through the Docker service environment.
 
 The application endpoints are:
 
@@ -65,6 +74,6 @@ docker compose logs --tail=100 backend frontend postgres redis horizon reverb sc
 
 ## Configuration safety
 
-The generated `docker/backend/.env` and `docker/frontend/.env` files are the local Docker environment files. Replace placeholder values there and never commit real Gemini credentials, application keys, Reverb secrets, or production database credentials.
+The generated `docker/backend/.env` and `docker/frontend/.env` files are the local Docker environment files, while `backend/.env` supports host-level Laravel commands. Replace placeholder values locally and never commit real Gemini credentials, application keys, Reverb secrets, production database credentials, or any `.env` file.
 
 Full setup, architecture, testing, security, and walkthrough documentation will be completed alongside the application.

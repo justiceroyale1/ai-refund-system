@@ -32,6 +32,14 @@ class Order extends Model
     }
 
     /**
+     * @return HasMany<RefundConversation, $this>
+     */
+    public function refundConversations(): HasMany
+    {
+        return $this->hasMany(RefundConversation::class);
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>

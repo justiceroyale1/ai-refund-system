@@ -21,4 +21,12 @@ class Customer extends Model
     {
         return $this->hasMany(Order::class);
     }
+
+    /**
+     * @return HasMany<RefundConversation, $this>
+     */
+    public function refundConversations(): HasMany
+    {
+        return $this->hasMany(RefundConversation::class);
+    }
 }
