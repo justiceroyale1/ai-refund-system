@@ -40,6 +40,14 @@ class Order extends Model
     }
 
     /**
+     * @return HasMany<RefundRequest, $this>
+     */
+    public function refundRequests(): HasMany
+    {
+        return $this->hasMany(RefundRequest::class);
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>

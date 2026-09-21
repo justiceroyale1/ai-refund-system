@@ -29,4 +29,12 @@ class Customer extends Model
     {
         return $this->hasMany(RefundConversation::class);
     }
+
+    /**
+     * @return HasMany<RefundRequest, $this>
+     */
+    public function refundRequests(): HasMany
+    {
+        return $this->hasMany(RefundRequest::class);
+    }
 }

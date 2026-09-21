@@ -2,23 +2,31 @@
 
 namespace App\Models;
 
-use App\Enums\ConversationState;
-use App\Enums\ConversationStatus;
+use App\Enums\DecisionCode;
+use App\Enums\DecisionSource;
+use App\Enums\RefundDecision;
 use App\Enums\RefundReason;
-use Database\Factories\RefundConversationFactory;
+use Database\Factories\RefundRequestFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
-#[Fillable(['customer_id', 'order_id', 'order_item_id', 'state', 'reason', 'reason_details', 'status', 'resolved_at'])]
-class RefundConversation extends Model
+#[Fillable(['refund_conversation_id', 'customer_id', 'order_id', 'order_item_id', 'reason', 'reason_details', 'amount_cents', 'initial_decision', 'decision', 'decision_source', 'decision_code', 'policy_checks', 'reviewed_by', 'review_note', 'decided_at'])]
+class RefundRequest extends Model
 {
-    /** @use HasFactory<RefundConversationFactory> */
+    /** @use HasFactory<RefundRequestFactory> */
     use HasFactory;
+
+    /**
+     * @return BelongsTo<RefundConversation, $this>
+     */
+    public function refundConversation(): BelongsTo
+    {
+        return $this->belongsTo(RefundConversation::class);
+    }
 
     /**
      * @return BelongsTo<Customer, $this>
@@ -45,27 +53,19 @@ class RefundConversation extends Model
     }
 
     /**
-     * @return HasMany<ConversationMessage, $this>
+     * @return BelongsTo<User, $this>
      */
-    public function messages(): HasMany
+    public function reviewer(): BelongsTo
     {
-        return $this->hasMany(ConversationMessage::class);
+        return $this->belongsTo(User::class, 'reviewed_by');
     }
 
     /**
-     * @return HasMany<AiAnalysis, $this>
+     * @return HasOne<Refund, $this>
      */
-    public function aiAnalyses(): HasMany
+    public function refund(): HasOne
     {
-        return $this->hasMany(AiAnalysis::class);
-    }
-
-    /**
-     * @return HasOne<RefundRequest, $this>
-     */
-    public function refundRequest(): HasOne
-    {
-        return $this->hasOne(RefundRequest::class);
+        return $this->hasOne(Refund::class);
     }
 
     /**
@@ -84,10 +84,14 @@ class RefundConversation extends Model
     protected function casts(): array
     {
         return [
-            'state' => ConversationState::class,
             'reason' => RefundReason::class,
-            'status' => ConversationStatus::class,
-            'resolved_at' => 'datetime',
+            'amount_cents' => 'integer',
+            'initial_decision' => RefundDecision::class,
+            'decision' => RefundDecision::class,
+            'decision_source' => DecisionSource::class,
+            'decision_code' => DecisionCode::class,
+            'policy_checks' => 'array',
+            'decided_at' => 'datetime',
         ];
     }
 }
