@@ -49,7 +49,17 @@ class RefundConversation extends Model
      */
     public function messages(): HasMany
     {
-        return $this->hasMany(ConversationMessage::class);
+        return $this->hasMany(ConversationMessage::class)
+            ->orderBy('created_at')
+            ->orderBy('id');
+    }
+
+    /**
+     * @return HasOne<ConversationMessage, $this>
+     */
+    public function latestMessage(): HasOne
+    {
+        return $this->hasOne(ConversationMessage::class)->latestOfMany();
     }
 
     /**

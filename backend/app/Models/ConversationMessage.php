@@ -16,6 +16,9 @@ class ConversationMessage extends Model
     /** @use HasFactory<ConversationMessageFactory> */
     use HasFactory;
 
+    /** @var list<string> */
+    protected $touches = ['refundConversation'];
+
     /**
      * @return BelongsTo<RefundConversation, $this>
      */
