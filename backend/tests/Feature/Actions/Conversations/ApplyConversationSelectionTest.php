@@ -5,6 +5,7 @@ namespace Tests\Feature\Actions\Conversations;
 use App\Actions\Conversations\ApplyConversationSelection;
 use App\Data\Conversations\ConversationSelection;
 use App\Data\Conversations\ConversationSelectionResult;
+use App\Enums\ConversationMessageTemplate;
 use App\Enums\ConversationSelectionOutcome;
 use App\Enums\ConversationSelectionType;
 use App\Enums\ConversationState;
@@ -179,6 +180,7 @@ class ApplyConversationSelectionTest extends TestCase
         $this->assertDatabaseHas('conversation_messages', [
             'refund_conversation_id' => $newConversation->id,
             'sender' => MessageSender::Assistant->value,
+            'content' => ConversationMessageTemplate::DuplicateItemDetected->value,
         ]);
     }
 
@@ -217,6 +219,7 @@ class ApplyConversationSelectionTest extends TestCase
         $this->assertDatabaseHas('conversation_messages', [
             'refund_conversation_id' => $newConversation->id,
             'sender' => MessageSender::System->value,
+            'content' => ConversationMessageTemplate::DuplicateConversationResolved->value,
         ]);
         $this->assertDatabaseHas('audit_logs', [
             'subject_type' => RefundConversation::class,
@@ -242,6 +245,11 @@ class ApplyConversationSelectionTest extends TestCase
             ConversationSelectionType::OrderItem->value,
             $result->actions[0]['type'],
         );
+        $this->assertDatabaseHas('conversation_messages', [
+            'refund_conversation_id' => $newConversation->id,
+            'sender' => MessageSender::Assistant->value,
+            'content' => ConversationMessageTemplate::AlternateItemRequested->value,
+        ]);
         $this->assertDatabaseMissing('audit_logs', [
             'subject_type' => RefundConversation::class,
             'subject_id' => $newConversation->id,

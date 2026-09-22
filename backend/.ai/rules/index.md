@@ -4,5 +4,6 @@ Before planning or editing, find the row whose globs match the file's path and r
 
 | Applies to | Rule file |
 | --- | --- |
-| app/**/*.php, database/**/*.php, tests/**/*.php | .ai/rules/eloquent-model-attributes.md |
 | app/Http/Controllers/** | .ai/rules/controllers.md |
+| app/Actions/Conversations/SubmitConversationMessage.php | .ai/rules/conversations.md |
+| app/**/*.php, database/**/*.php, tests/**/*.php | .ai/rules/eloquent-model-attributes.md |

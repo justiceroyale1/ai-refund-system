@@ -3,6 +3,7 @@
 namespace Tests\Feature\Http;
 
 use App\Enums\AuditActorType;
+use App\Enums\ConversationMessageTemplate;
 use App\Enums\ConversationState;
 use App\Enums\ConversationStatus;
 use App\Enums\MessageSender;
@@ -134,7 +135,7 @@ class RefundConversationControllerTest extends TestCase
             'updated_at' => '2026-09-20 10:00:00',
         ]);
         $latestMessage = ConversationMessage::factory()->assistant()->for($conversation)->create([
-            'content' => 'Please describe the damage.',
+            'content' => ConversationMessageTemplate::DamagedItemDetailsRequested->value,
             'metadata' => [
                 'actions' => [
                     ['type' => 'provide_details', 'label' => 'Describe damage'],

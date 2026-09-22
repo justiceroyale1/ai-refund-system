@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Customer\ConversationMessageController;
 use App\Http\Controllers\Customer\RefundConversationController;
 use App\Http\Controllers\DemoCustomerController;
 use Illuminate\Support\Facades\Route;
@@ -18,4 +19,7 @@ Route::prefix('customer')
         Route::get('/conversations/{conversation}', [RefundConversationController::class, 'show'])
             ->where('conversation', '[1-9][0-9]*')
             ->name('conversations.show');
+        Route::post('/conversations/{conversation}/messages', [ConversationMessageController::class, 'store'])
+            ->where('conversation', '[1-9][0-9]*')
+            ->name('conversations.messages.store');
     });

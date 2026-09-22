@@ -5,6 +5,7 @@ namespace App\Actions\Conversations;
 use App\Data\Conversations\ConversationSelection;
 use App\Data\Conversations\ConversationSelectionResult;
 use App\Enums\AuditActorType;
+use App\Enums\ConversationMessageTemplate;
 use App\Enums\ConversationSelectionType;
 use App\Enums\ConversationState;
 use App\Enums\ConversationStatus;
@@ -13,6 +14,7 @@ use App\Enums\RefundReason;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\RefundConversation;
+use App\Services\Conversations\ConversationMessageService;
 use App\Services\Conversations\ConversationQuickActions;
 use App\Services\Conversations\ConversationRequirements;
 use App\Services\Conversations\ConversationStateMachine;
@@ -26,6 +28,7 @@ final class ApplyConversationSelection
         private readonly ConversationStateMachine $stateMachine,
         private readonly ConversationRequirements $requirements,
         private readonly ConversationQuickActions $quickActions,
+        private readonly ConversationMessageService $messages,
     ) {}
 
     public function handle(
@@ -102,11 +105,11 @@ final class ApplyConversationSelection
             if ($existingConversation !== null) {
                 $actions = $this->quickActions->duplicate($existingConversation, $orderItem);
 
-                $lockedConversation->messages()->create([
-                    'sender' => MessageSender::Assistant,
-                    'content' => 'This item already has an active refund conversation. You can open it or choose another item.',
-                    'metadata' => ['actions' => $actions],
-                ]);
+                $this->messages->assistant(
+                    $lockedConversation,
+                    ConversationMessageTemplate::DuplicateItemDetected,
+                    $actions,
+                );
 
                 return ConversationSelectionResult::duplicateDetected(
                     $lockedConversation->refresh(),
@@ -193,13 +196,13 @@ final class ApplyConversationSelection
             $this->stateMachine->resolveAsDuplicate($lockedConversation);
             $lockedConversation->save();
 
-            $lockedConversation->messages()->create([
-                'sender' => MessageSender::System,
-                'content' => 'This request was closed because the selected item is already being handled in another conversation.',
-                'metadata' => [
+            $this->messages->system(
+                $lockedConversation,
+                ConversationMessageTemplate::DuplicateConversationResolved,
+                [
                     'existing_conversation_id' => $existingConversation->getKey(),
                 ],
-            ]);
+            );
 
             $lockedConversation->auditLogs()->create([
                 'actor_type' => AuditActorType::Customer,
@@ -232,11 +235,11 @@ final class ApplyConversationSelection
             $this->lockSelectableOrderItem($lockedConversation, $excludedOrderItemId);
             $actions = $this->quickActions->for($lockedConversation, $excludedOrderItemId);
 
-            $lockedConversation->messages()->create([
-                'sender' => MessageSender::Assistant,
-                'content' => 'Please choose another item from this order.',
-                'metadata' => ['actions' => $actions],
-            ]);
+            $this->messages->assistant(
+                $lockedConversation,
+                ConversationMessageTemplate::AlternateItemRequested,
+                $actions,
+            );
 
             return ConversationSelectionResult::alternateItemRequested(
                 $lockedConversation->refresh(),
