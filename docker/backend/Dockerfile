@@ -1,4 +1,4 @@
-FROM php:8.4-cli-alpine
+FROM php:8.4-cli-alpine AS backend-base
 
 RUN apk add --no-cache \
         icu-libs \
@@ -31,6 +31,38 @@ RUN chmod +x /usr/local/bin/verify-image-env
 WORKDIR /var/www/html
 
 COPY backend/composer.json backend/composer.lock ./
+
+FROM backend-base AS test
+
+RUN composer install \
+        --no-interaction \
+        --no-progress \
+        --no-scripts \
+        --optimize-autoloader \
+        --prefer-dist
+
+COPY backend/ ./
+
+RUN verify-image-env \
+    && composer dump-autoload --no-interaction --optimize \
+    && mkdir -p \
+        bootstrap/cache \
+        storage/framework/cache/data \
+        storage/framework/sessions \
+        storage/framework/testing \
+        storage/framework/views \
+        storage/logs \
+    && chown -R www-data:www-data bootstrap/cache storage
+
+COPY docker/backend/entrypoint.sh /usr/local/bin/backend-entrypoint
+COPY docker/backend/test-entrypoint.sh /usr/local/bin/backend-test-entrypoint
+
+RUN chmod +x /usr/local/bin/backend-entrypoint /usr/local/bin/backend-test-entrypoint
+
+ENTRYPOINT ["backend-test-entrypoint"]
+CMD ["php", "artisan", "test", "--compact", "--do-not-cache-result"]
+
+FROM backend-base AS production
 
 RUN composer install \
         --no-dev \

@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Http;
 
+use App\Enums\ConversationState;
+use App\Services\Conversations\ConversationWorkflowException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\Request;
@@ -108,6 +110,55 @@ class ApiErrorResponseTest extends TestCase
                     'code' => 'CONFLICT',
                     'message' => 'The request conflicts with the current resource state.',
                     'details' => [],
+                ],
+            ]);
+    }
+
+    public function test_returns_domain_error_contract_for_an_invalid_conversation_transition(): void
+    {
+        Route::post('/api/testing/conversation-transition-error', function (): never {
+            throw ConversationWorkflowException::invalidTransition(
+                ConversationState::IdentifyingOrder,
+                ConversationState::Evaluating,
+            );
+        });
+
+        $response = $this->postJson('/api/testing/conversation-transition-error');
+
+        $response
+            ->assertConflict()
+            ->assertExactJson([
+                'error' => [
+                    'code' => 'INVALID_CONVERSATION_TRANSITION',
+                    'message' => 'The refund conversation cannot make that transition.',
+                    'details' => [
+                        'from' => 'identifying_order',
+                        'to' => 'evaluating',
+                    ],
+                ],
+            ]);
+    }
+
+    public function test_returns_domain_error_contract_for_an_invalid_conversation_selection(): void
+    {
+        Route::post('/api/testing/conversation-selection-error', function (): never {
+            throw ConversationWorkflowException::invalidSelection(
+                'The selected order is not available for this refund conversation.',
+                ['field' => 'selection.value'],
+            );
+        });
+
+        $response = $this->postJson('/api/testing/conversation-selection-error');
+
+        $response
+            ->assertUnprocessable()
+            ->assertExactJson([
+                'error' => [
+                    'code' => 'INVALID_CONVERSATION_SELECTION',
+                    'message' => 'The selected order is not available for this refund conversation.',
+                    'details' => [
+                        'field' => 'selection.value',
+                    ],
                 ],
             ]);
     }

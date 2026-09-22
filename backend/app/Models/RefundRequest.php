@@ -14,6 +14,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
+/**
+ * @property RefundDecision|null $decision
+ */
 #[Fillable(['refund_conversation_id', 'customer_id', 'order_id', 'order_item_id', 'reason', 'reason_details', 'amount_cents', 'initial_decision', 'decision', 'decision_source', 'decision_code', 'policy_checks', 'reviewed_by', 'review_note', 'decided_at'])]
 class RefundRequest extends Model
 {

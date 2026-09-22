@@ -2,13 +2,8 @@
 
 namespace App\Http\Resources;
 
-use App\Enums\ConversationState;
-use App\Enums\ConversationStatus;
-use App\Enums\RefundDecision;
-use App\Enums\RefundReason;
 use App\Models\ConversationMessage;
 use App\Models\RefundConversation;
-use Carbon\CarbonInterface;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use LogicException;
@@ -27,26 +22,12 @@ class RefundConversationResource extends JsonResource
             throw new LogicException('Refund conversation resources require a refund conversation model.');
         }
 
-        $state = $this->resource->getAttribute('state');
-        $status = $this->resource->getAttribute('status');
-        $reason = $this->resource->getAttribute('reason');
-        $resolvedAt = $this->resource->getAttribute('resolved_at');
-        $createdAt = $this->resource->getAttribute('created_at');
-        $updatedAt = $this->resource->getAttribute('updated_at');
-
-        if (! $state instanceof ConversationState || ! $status instanceof ConversationStatus) {
-            throw new LogicException('Conversation state and status must be cast to domain enums.');
-        }
-
-        if ($reason !== null && ! $reason instanceof RefundReason) {
-            throw new LogicException('Conversation reason must be cast to a refund reason enum.');
-        }
-
-        foreach ([$resolvedAt, $createdAt, $updatedAt] as $timestamp) {
-            if ($timestamp !== null && ! $timestamp instanceof CarbonInterface) {
-                throw new LogicException('Conversation timestamps must be cast to dates.');
-            }
-        }
+        $state = $this->resource->state;
+        $status = $this->resource->status;
+        $reason = $this->resource->reason;
+        $resolvedAt = $this->resource->resolved_at;
+        $createdAt = $this->resource->created_at;
+        $updatedAt = $this->resource->updated_at;
 
         return [
             'id' => $this->resource->id,
@@ -76,14 +57,10 @@ class RefundConversationResource extends JsonResource
 
     private function currentDecision(): ?string
     {
-        $decision = $this->resource->refundRequest?->getAttribute('decision');
+        $decision = $this->resource->refundRequest?->decision;
 
         if ($decision === null) {
             return null;
-        }
-
-        if (! $decision instanceof RefundDecision) {
-            throw new LogicException('Refund request decisions must be cast to a refund decision enum.');
         }
 
         return $decision->value;
@@ -104,7 +81,7 @@ class RefundConversationResource extends JsonResource
             return [];
         }
 
-        $metadata = $latestMessage->getAttribute('metadata');
+        $metadata = $latestMessage->metadata;
 
         if (! is_array($metadata)) {
             return [];

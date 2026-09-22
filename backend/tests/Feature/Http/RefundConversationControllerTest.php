@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Http;
 
+use App\Enums\AuditActorType;
 use App\Enums\ConversationState;
 use App\Enums\ConversationStatus;
 use App\Enums\MessageSender;
@@ -105,7 +106,7 @@ class RefundConversationControllerTest extends TestCase
             'order_item_id' => null,
         ]);
         $this->assertDatabaseHas('audit_logs', [
-            'actor_type' => 'customer',
+            'actor_type' => AuditActorType::Customer->value,
             'actor_id' => $customer->id,
             'subject_type' => RefundConversation::class,
             'subject_id' => $conversationId,

@@ -2,12 +2,16 @@
 
 namespace App\Models;
 
+use App\Enums\AuditActorType;
 use Database\Factories\AuditLogFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
+/**
+ * @property AuditActorType $actor_type
+ */
 #[Fillable(['actor_type', 'actor_id', 'subject_type', 'subject_id', 'event', 'metadata'])]
 class AuditLog extends Model
 {
@@ -32,6 +36,7 @@ class AuditLog extends Model
     protected function casts(): array
     {
         return [
+            'actor_type' => AuditActorType::class,
             'actor_id' => 'integer',
             'subject_id' => 'integer',
             'metadata' => 'array',

@@ -9,7 +9,13 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property MessageSender $sender
+ * @property array<string, mixed>|null $metadata
+ * @property Carbon|null $created_at
+ */
 #[Fillable(['refund_conversation_id', 'client_message_id', 'sender', 'content', 'metadata'])]
 class ConversationMessage extends Model
 {

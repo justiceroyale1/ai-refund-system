@@ -42,7 +42,7 @@ The startup script creates both ignored service environment files before Compose
 
 Their safe templates are `docker/backend/.env.example` and `docker/frontend/.env.example`. Rerun the startup script after an environment change so Compose recreates affected containers with the new values.
 
-For host-level Laravel commands and tests, the backend directory contains the safe, tracked `backend/.env.example` template. Create the ignored local environment file when it is missing:
+For host-level Laravel commands and quality tooling, the backend directory contains the safe, tracked `backend/.env.example` template. Create the ignored local environment file when it is missing:
 
 ```bash
 cp backend/.env.example backend/.env
@@ -50,7 +50,18 @@ cd backend
 composer quality
 ```
 
-Host-level PHPUnit settings override the service connections with isolated test configuration. Docker Compose continues to load `docker/backend/.env`; keep the two safe backend templates aligned when shared variables change. The backend image build excludes both `backend/.env` and `backend/.env.example`, so containers still receive runtime configuration exclusively through the Docker service environment.
+`composer test` and the test phase of `composer quality` run through a development-only Docker image against the isolated `refund_system_test` database in the existing PostgreSQL service. The runner creates `docker/backend/.env.testing` from its safe `.env.testing.example` template, creates the database when missing, reuses it safely on later runs, and refuses to run when the test and application database names match. Use `.env.testing` for local test-only overrides while shared PostgreSQL credentials continue to come from `docker/backend/.env`.
+
+Run the full backend suite or pass a focused PHPUnit path from `backend/`:
+
+```bash
+composer test
+composer test -- tests/Feature/Actions/Conversations
+```
+
+The equivalent repository-root command is `./docker/test-backend.sh`. The Compose test services are profile-gated and do not run during normal application startup. Host-level PHPUnit retains its in-memory SQLite fallback for intentional lightweight checks, but the canonical approval-gate suite uses PostgreSQL so row-lock and concurrency coverage executes without being skipped.
+
+Docker Compose continues to load `docker/backend/.env`; keep the two safe backend templates aligned when shared variables change. Production backend images exclude both `backend/.env` and `backend/.env.example`, while the ephemeral test container creates an empty runtime-only `.env` so Laravel does not probe for a missing file. All effective test configuration still comes from the Compose environment.
 
 The application endpoints are:
 

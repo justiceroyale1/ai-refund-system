@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\AuditActorType;
 use App\Models\AuditLog;
 use App\Models\RefundConversation;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -19,7 +20,7 @@ class AuditLogFactory extends Factory
     public function definition(): array
     {
         return [
-            'actor_type' => 'system',
+            'actor_type' => AuditActorType::System,
             'actor_id' => null,
             'subject_type' => RefundConversation::class,
             'subject_id' => RefundConversation::factory(),

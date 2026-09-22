@@ -10,6 +10,16 @@ x-backend-env-files: &backend-env-files
   - path: ./docker/backend/.env
     required: false
 
+x-backend-test-env-files: &backend-test-env-files
+  - path: ./docker/backend/.env.example
+    required: true
+  - path: ./docker/backend/.env
+    required: false
+  - path: ./docker/backend/.env.testing.example
+    required: true
+  - path: ./docker/backend/.env.testing
+    required: false
+
 x-frontend-env-files: &frontend-env-files
   - path: ./docker/frontend/.env.example
     required: true
@@ -87,6 +97,30 @@ services:
       timeout: 3s
       retries: 12
       start_period: 5s
+
+  test-database:
+    image: postgres:17-alpine
+    profiles: [ "test" ]
+    restart: "no"
+    env_file: *backend-test-env-files
+    entrypoint: [ "/usr/local/bin/create-test-database" ]
+    volumes:
+      - ./docker/postgres/create-test-database.sh:/usr/local/bin/create-test-database:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  backend-test:
+    image: ai-refund-system-backend-test:local
+    profiles: [ "test" ]
+    build:
+      <<: *backend-build
+      target: test
+    restart: "no"
+    env_file: *backend-test-env-files
+    depends_on:
+      test-database:
+        condition: service_completed_successfully
 
   redis:
     image: redis:7.4-alpine

@@ -13,6 +13,9 @@ enum ApiErrorCode: string
     case ResourceNotFound = 'RESOURCE_NOT_FOUND';
     case MethodNotAllowed = 'METHOD_NOT_ALLOWED';
     case Conflict = 'CONFLICT';
+    case ConversationAlreadyResolved = 'CONVERSATION_ALREADY_RESOLVED';
+    case InvalidConversationTransition = 'INVALID_CONVERSATION_TRANSITION';
+    case InvalidConversationSelection = 'INVALID_CONVERSATION_SELECTION';
     case UnprocessableEntity = 'UNPROCESSABLE_ENTITY';
     case TooManyRequests = 'TOO_MANY_REQUESTS';
     case ServiceUnavailable = 'SERVICE_UNAVAILABLE';
@@ -47,6 +50,9 @@ enum ApiErrorCode: string
             self::ResourceNotFound => 'The requested resource was not found.',
             self::MethodNotAllowed => 'The requested method is not allowed for this resource.',
             self::Conflict => 'The request conflicts with the current resource state.',
+            self::ConversationAlreadyResolved => 'This refund conversation has already been resolved.',
+            self::InvalidConversationTransition => 'The refund conversation cannot make that transition.',
+            self::InvalidConversationSelection => 'The selected conversation action is invalid.',
             self::UnprocessableEntity => 'The request could not be processed.',
             self::TooManyRequests => 'Too many requests have been made.',
             self::ServiceUnavailable => 'The service is temporarily unavailable.',

@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+!docker/backend/.env.testing.example
 
 # Editor and operating-system files
 .idea/

@@ -2,9 +2,7 @@
 
 namespace App\Http\Resources;
 
-use App\Enums\MessageSender;
 use App\Models\ConversationMessage;
-use Carbon\CarbonInterface;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use LogicException;
@@ -23,16 +21,8 @@ class ConversationMessageResource extends JsonResource
             throw new LogicException('Conversation message resources require a conversation message model.');
         }
 
-        $sender = $this->resource->getAttribute('sender');
-        $createdAt = $this->resource->getAttribute('created_at');
-
-        if (! $sender instanceof MessageSender) {
-            throw new LogicException('Conversation message sender must be cast to a message sender enum.');
-        }
-
-        if ($createdAt !== null && ! $createdAt instanceof CarbonInterface) {
-            throw new LogicException('Conversation message creation time must be cast to a date.');
-        }
+        $sender = $this->resource->sender;
+        $createdAt = $this->resource->created_at;
 
         return [
             'id' => $this->resource->id,

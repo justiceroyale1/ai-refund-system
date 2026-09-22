@@ -3,6 +3,7 @@
 use App\Enums\Http\ApiErrorCode;
 use App\Http\Middleware\ResolveDemoCustomer;
 use App\Http\Responses\ApiErrorResponse;
+use App\Services\Conversations\ConversationWorkflowException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -59,6 +60,19 @@ return Application::configure(basePath: dirname(__DIR__))
                 ApiErrorCode::Unauthenticated,
                 ApiErrorCode::Unauthenticated->defaultMessage(),
                 status: 401,
+            );
+        });
+
+        $exceptions->render(function (ConversationWorkflowException $exception, Request $request): ?JsonResponse {
+            if (! ApiErrorResponse::shouldRender($request)) {
+                return null;
+            }
+
+            return ApiErrorResponse::make(
+                $exception->errorCode(),
+                $exception->getMessage(),
+                $exception->details(),
+                $exception->status(),
             );
         });
 

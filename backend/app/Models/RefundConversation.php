@@ -13,7 +13,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property ConversationState $state
+ * @property RefundReason|null $reason
+ * @property string|null $reason_details
+ * @property ConversationStatus $status
+ * @property Carbon|null $resolved_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ */
 #[Fillable(['customer_id', 'order_id', 'order_item_id', 'state', 'reason', 'reason_details', 'status', 'resolved_at'])]
 class RefundConversation extends Model
 {

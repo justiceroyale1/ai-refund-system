@@ -2,6 +2,7 @@
 
 namespace App\Actions\Conversations;
 
+use App\Enums\AuditActorType;
 use App\Enums\ConversationState;
 use App\Enums\ConversationStatus;
 use App\Models\Customer;
@@ -19,7 +20,7 @@ class StartRefundConversation
             ]);
 
             $conversation->auditLogs()->create([
-                'actor_type' => 'customer',
+                'actor_type' => AuditActorType::Customer,
                 'actor_id' => $customer->getKey(),
                 'event' => 'conversation.started',
                 'metadata' => null,
