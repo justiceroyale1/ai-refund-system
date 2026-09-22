@@ -5,6 +5,9 @@ namespace App\Enums\Http;
 enum ApiErrorCode: string
 {
     case ValidationFailed = 'VALIDATION_FAILED';
+    case DemoCustomerIdRequired = 'DEMO_CUSTOMER_ID_REQUIRED';
+    case DemoCustomerIdInvalid = 'DEMO_CUSTOMER_ID_INVALID';
+    case DemoCustomerNotFound = 'DEMO_CUSTOMER_NOT_FOUND';
     case Unauthenticated = 'UNAUTHENTICATED';
     case Forbidden = 'FORBIDDEN';
     case ResourceNotFound = 'RESOURCE_NOT_FOUND';
@@ -36,6 +39,9 @@ enum ApiErrorCode: string
     {
         return match ($this) {
             self::ValidationFailed => 'The given data was invalid.',
+            self::DemoCustomerIdRequired => 'The X-Demo-Customer-Id header is required.',
+            self::DemoCustomerIdInvalid => 'The X-Demo-Customer-Id header must contain a valid customer ID.',
+            self::DemoCustomerNotFound => 'The selected demo customer could not be found.',
             self::Unauthenticated => 'Authentication is required.',
             self::Forbidden => 'You are not authorized to perform this action.',
             self::ResourceNotFound => 'The requested resource was not found.',
