@@ -3,7 +3,7 @@
 namespace Tests\Feature\Http;
 
 use App\Enums\ConversationState;
-use App\Services\Conversations\ConversationWorkflowException;
+use App\Exceptions\Conversations\ConversationWorkflowException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\Request;

@@ -4,7 +4,7 @@ namespace App\Data\AI;
 
 use App\Enums\AI\RefundIntent;
 use App\Enums\RefundReason;
-use App\Services\AI\Exceptions\InvalidAIResponseException;
+use App\Exceptions\AI\InvalidAIResponseException;
 use Illuminate\Support\Str;
 
 final readonly class RefundAnalysisResult

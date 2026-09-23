@@ -11,6 +11,7 @@ use App\Enums\ConversationState;
 use App\Enums\ConversationStatus;
 use App\Enums\MessageSender;
 use App\Enums\RefundReason;
+use App\Exceptions\Conversations\ConversationWorkflowException;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\RefundConversation;
@@ -18,7 +19,6 @@ use App\Services\Conversations\ConversationMessageService;
 use App\Services\Conversations\ConversationQuickActions;
 use App\Services\Conversations\ConversationRequirements;
 use App\Services\Conversations\ConversationStateMachine;
-use App\Services\Conversations\ConversationWorkflowException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 

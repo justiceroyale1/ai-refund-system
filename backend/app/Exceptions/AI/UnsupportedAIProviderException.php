@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\AI\Exceptions;
+namespace App\Exceptions\AI;
 
 final class UnsupportedAIProviderException extends AIProviderException
 {

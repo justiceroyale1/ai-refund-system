@@ -4,7 +4,7 @@ namespace App\Data\Conversations;
 
 use App\Enums\ConversationSelectionType;
 use App\Enums\RefundReason;
-use App\Services\Conversations\ConversationWorkflowException;
+use App\Exceptions\Conversations\ConversationWorkflowException;
 
 final readonly class ConversationSelection
 {

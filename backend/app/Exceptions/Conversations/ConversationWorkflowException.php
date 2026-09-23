@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\Conversations;
+namespace App\Exceptions\Conversations;
 
 use App\Enums\ConversationState;
 use App\Enums\Http\ApiErrorCode;

@@ -5,8 +5,9 @@ namespace Tests\Feature\Providers;
 use App\Contracts\AI\RefundConversationAI;
 use App\Data\AI\ConversationContext;
 use App\Enums\ConversationState;
-use App\Services\AI\Exceptions\UnsupportedAIProviderException;
+use App\Exceptions\AI\UnsupportedAIProviderException;
 use App\Services\AI\FakeRefundConversationAI;
+use App\Services\AI\GeminiRefundConversationAI;
 use App\Services\AI\RefundConversationPrompt;
 use PHPUnit\Framework\Attributes\DataProvider;
 use stdClass;
@@ -50,6 +51,30 @@ class AIServiceProviderTest extends TestCase
         $this->assertInstanceOf(FakeRefundConversationAI::class, $provider);
         $this->assertSame(1, $provider->maximumRawResponseBytes());
         $this->assertSame('fake', $result->metadata->provider);
+    }
+
+    public function test_resolves_the_configured_gemini_provider_as_a_singleton(): void
+    {
+        config()->set('ai.default', 'gemini');
+        config()->set('ai.providers.gemini.api_key', 'test-gemini-key');
+        config()->set('ai.providers.gemini.model', 'gemini-3.8-flash');
+
+        $first = $this->app->make(RefundConversationAI::class);
+        $second = $this->app->make(RefundConversationAI::class);
+
+        $this->assertInstanceOf(GeminiRefundConversationAI::class, $first);
+        $this->assertSame($first, $second);
+    }
+
+    public function test_rejects_gemini_configuration_without_an_api_key(): void
+    {
+        config()->set('ai.default', 'gemini');
+        config()->set('ai.providers.gemini.api_key', null);
+
+        $this->expectException(UnsupportedAIProviderException::class);
+        $this->expectExceptionMessage('The configured AI analysis provider is not available.');
+
+        $this->app->make(RefundConversationAI::class);
     }
 
     #[DataProvider('invalidResponseLimits')]

@@ -3,8 +3,9 @@
 namespace App\Providers;
 
 use App\Contracts\AI\RefundConversationAI;
-use App\Services\AI\Exceptions\UnsupportedAIProviderException;
+use App\Exceptions\AI\UnsupportedAIProviderException;
 use App\Services\AI\FakeRefundConversationAI;
+use App\Services\AI\GeminiRefundConversationAI;
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
@@ -24,6 +25,33 @@ class AIServiceProvider extends ServiceProvider
             }
 
             return new FakeRefundConversationAI($maximumRawResponseBytes);
+        });
+
+        $this->app->singleton(GeminiRefundConversationAI::class, function (Application $app): GeminiRefundConversationAI {
+            $config = $app->make(Repository::class);
+            $apiKey = $config->get('ai.providers.gemini.api_key');
+            $model = $config->get('ai.providers.gemini.model');
+            $maximumRawResponseBytes = $config->get('ai.max_response_bytes');
+            $connectionTimeoutSeconds = $config->get('ai.providers.gemini.connection_timeout_seconds');
+            $timeoutSeconds = $config->get('ai.providers.gemini.timeout_seconds');
+
+            if (
+                ! is_string($apiKey)
+                || ! is_string($model)
+                || ! is_int($maximumRawResponseBytes)
+                || ! is_int($connectionTimeoutSeconds)
+                || ! is_int($timeoutSeconds)
+            ) {
+                throw new UnsupportedAIProviderException;
+            }
+
+            return new GeminiRefundConversationAI(
+                $apiKey,
+                $model,
+                $maximumRawResponseBytes,
+                $connectionTimeoutSeconds,
+                $timeoutSeconds,
+            );
         });
 
         $this->app->singleton(RefundConversationAI::class, function (Application $app): RefundConversationAI {

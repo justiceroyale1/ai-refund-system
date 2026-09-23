@@ -13,11 +13,11 @@ use App\Enums\ConversationStatus;
 use App\Enums\Http\ApiErrorCode;
 use App\Enums\MessageSender;
 use App\Enums\RefundReason;
+use App\Exceptions\Conversations\ConversationWorkflowException;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\RefundConversation;
-use App\Services\Conversations\ConversationWorkflowException;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Tests\TestCase;
 

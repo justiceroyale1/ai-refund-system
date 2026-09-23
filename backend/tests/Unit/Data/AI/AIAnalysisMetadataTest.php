@@ -3,7 +3,7 @@
 namespace Tests\Unit\Data\AI;
 
 use App\Data\AI\AIAnalysisMetadata;
-use App\Services\AI\Exceptions\InvalidAIResponseException;
+use App\Exceptions\AI\InvalidAIResponseException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 

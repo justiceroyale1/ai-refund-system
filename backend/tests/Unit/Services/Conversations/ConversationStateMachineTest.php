@@ -5,9 +5,9 @@ namespace Tests\Unit\Services\Conversations;
 use App\Enums\ConversationState;
 use App\Enums\ConversationStatus;
 use App\Enums\Http\ApiErrorCode;
+use App\Exceptions\Conversations\ConversationWorkflowException;
 use App\Models\RefundConversation;
 use App\Services\Conversations\ConversationStateMachine;
-use App\Services\Conversations\ConversationWorkflowException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 

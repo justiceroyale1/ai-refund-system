@@ -5,7 +5,7 @@ namespace Tests\Unit\Data\Conversations;
 use App\Data\Conversations\ConversationSelection;
 use App\Enums\ConversationSelectionType;
 use App\Enums\Http\ApiErrorCode;
-use App\Services\Conversations\ConversationWorkflowException;
+use App\Exceptions\Conversations\ConversationWorkflowException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 

@@ -6,7 +6,7 @@ use App\Data\AI\AIAnalysisMetadata;
 use App\Data\AI\RefundAnalysisResult;
 use App\Enums\AI\RefundIntent;
 use App\Enums\RefundReason;
-use App\Services\AI\Exceptions\InvalidAIResponseException;
+use App\Exceptions\AI\InvalidAIResponseException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 

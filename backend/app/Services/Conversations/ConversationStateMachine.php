@@ -4,6 +4,7 @@ namespace App\Services\Conversations;
 
 use App\Enums\ConversationState;
 use App\Enums\ConversationStatus;
+use App\Exceptions\Conversations\ConversationWorkflowException;
 use App\Models\RefundConversation;
 
 final class ConversationStateMachine

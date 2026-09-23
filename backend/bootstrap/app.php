@@ -1,9 +1,9 @@
 <?php
 
 use App\Enums\Http\ApiErrorCode;
+use App\Exceptions\Conversations\ConversationWorkflowException;
 use App\Http\Middleware\ResolveDemoCustomer;
 use App\Http\Responses\ApiErrorResponse;
-use App\Services\Conversations\ConversationWorkflowException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;

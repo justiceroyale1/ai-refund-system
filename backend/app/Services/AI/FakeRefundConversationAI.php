@@ -9,9 +9,9 @@ use App\Data\AI\RefundAnalysisResult;
 use App\Enums\AI\FakeRefundConversationScenario;
 use App\Enums\AI\RefundIntent;
 use App\Enums\RefundReason;
-use App\Services\AI\Exceptions\AIProviderException;
-use App\Services\AI\Exceptions\AIProviderUnavailableException;
-use App\Services\AI\Exceptions\InvalidAIResponseException;
+use App\Exceptions\AI\AIProviderException;
+use App\Exceptions\AI\AIProviderUnavailableException;
+use App\Exceptions\AI\InvalidAIResponseException;
 
 final class FakeRefundConversationAI implements RefundConversationAI
 {
