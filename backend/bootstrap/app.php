@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\Http\ApiErrorCode;
+use App\Exceptions\AI\AIProviderException;
 use App\Exceptions\Conversations\ConversationWorkflowException;
 use App\Http\Middleware\ResolveDemoCustomer;
 use App\Http\Responses\ApiErrorResponse;
@@ -73,6 +74,18 @@ return Application::configure(basePath: dirname(__DIR__))
                 $exception->getMessage(),
                 $exception->details(),
                 $exception->status(),
+            );
+        });
+
+        $exceptions->render(function (AIProviderException $exception, Request $request): ?JsonResponse {
+            if (! ApiErrorResponse::shouldRender($request)) {
+                return null;
+            }
+
+            return ApiErrorResponse::make(
+                ApiErrorCode::ServiceUnavailable,
+                $exception->getMessage(),
+                status: 503,
             );
         });
 

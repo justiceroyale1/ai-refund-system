@@ -5,6 +5,7 @@ namespace App\Actions\Conversations;
 use App\Data\Conversations\ConversationSelection;
 use App\Enums\ConversationStatus;
 use App\Enums\MessageSender;
+use App\Exceptions\AI\AIProviderException;
 use App\Exceptions\Conversations\ConversationWorkflowException;
 use App\Models\ConversationMessage;
 use App\Models\RefundConversation;
@@ -15,6 +16,7 @@ final class SubmitConversationMessage
 {
     public function __construct(
         private readonly ApplyConversationSelection $applyConversationSelection,
+        private readonly ProcessConversationAnalysis $processConversationAnalysis,
         private readonly ConversationMessageService $messages,
     ) {}
 
@@ -24,49 +26,56 @@ final class SubmitConversationMessage
         string $content,
         ?ConversationSelection $selection,
     ): RefundConversation {
-        return DB::transaction(function () use (
-            $conversation,
-            $clientMessageId,
-            $content,
-            $selection,
-        ): RefundConversation {
-            $lockedConversation = RefundConversation::query()
-                ->whereKey($conversation->getKey())
-                ->lockForUpdate()
-                ->firstOrFail();
-
-            $existingMessage = ConversationMessage::query()
-                ->where('refund_conversation_id', $lockedConversation->getKey())
-                ->where('sender', MessageSender::Customer->value)
-                ->where('client_message_id', $clientMessageId)
-                ->first();
-
-            if ($existingMessage !== null) {
-                return $lockedConversation->refresh();
-            }
-
-            if ($lockedConversation->status === ConversationStatus::Resolved) {
-                throw ConversationWorkflowException::alreadyResolved();
-            }
-
-            $this->messages->customer(
-                $lockedConversation,
+        try {
+            return DB::transaction(function () use (
+                $conversation,
                 $clientMessageId,
                 $content,
                 $selection,
-            );
+            ): RefundConversation {
+                $lockedConversation = RefundConversation::query()
+                    ->whereKey($conversation->getKey())
+                    ->lockForUpdate()
+                    ->firstOrFail();
 
+                $existingMessage = ConversationMessage::query()
+                    ->where('refund_conversation_id', $lockedConversation->getKey())
+                    ->where('sender', MessageSender::Customer->value)
+                    ->where('client_message_id', $clientMessageId)
+                    ->first();
+
+                if ($existingMessage !== null) {
+                    return $lockedConversation->refresh();
+                }
+
+                if ($lockedConversation->status === ConversationStatus::Resolved) {
+                    throw ConversationWorkflowException::alreadyResolved();
+                }
+
+                $customerMessage = $this->messages->customer(
+                    $lockedConversation,
+                    $clientMessageId,
+                    $content,
+                    $selection,
+                );
+
+                $result = $selection === null
+                    ? $this->processConversationAnalysis->handle($lockedConversation, $customerMessage)
+                    : $this->applyConversationSelection->handle($lockedConversation, $selection);
+                $this->messages->followUp($result);
+
+                return $result->conversation->refresh();
+            });
+        } catch (AIProviderException $exception) {
             if ($selection === null) {
-                return $lockedConversation->refresh();
+                $this->processConversationAnalysis->recordFailure(
+                    $conversation,
+                    $clientMessageId,
+                    $exception,
+                );
             }
 
-            $selectionResult = $this->applyConversationSelection->handle(
-                $lockedConversation,
-                $selection,
-            );
-            $this->messages->followUp($selectionResult);
-
-            return $selectionResult->conversation->refresh();
-        });
+            throw $exception;
+        }
     }
 }

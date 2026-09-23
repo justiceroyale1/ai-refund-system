@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Http;
 
+use App\Enums\AI\FakeRefundConversationScenario;
 use App\Enums\AuditActorType;
 use App\Enums\ConversationMessageTemplate;
 use App\Enums\ConversationSelectionType;
@@ -9,11 +10,15 @@ use App\Enums\ConversationState;
 use App\Enums\ConversationStatus;
 use App\Enums\MessageSender;
 use App\Enums\RefundReason;
+use App\Exceptions\AI\AIProviderUnavailableException;
+use App\Exceptions\AI\InvalidAIResponseException;
+use App\Models\AiAnalysis;
 use App\Models\ConversationMessage;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\RefundConversation;
+use App\Services\AI\FakeRefundConversationAI;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Testing\TestResponse;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -23,11 +28,12 @@ class ConversationMessageControllerTest extends TestCase
 {
     use LazilyRefreshDatabase;
 
-    public function test_persists_a_free_form_customer_message_without_advancing_the_workflow(): void
+    public function test_analyzes_a_free_form_customer_message_and_asks_for_missing_order_information(): void
     {
         $customer = Customer::factory()->create();
         $conversation = RefundConversation::factory()->for($customer)->create();
         $clientMessageId = '6f92fcbb-b660-4fba-b07f-8329381da397';
+        app(FakeRefundConversationAI::class)->useScenario(FakeRefundConversationScenario::MissingInformation);
 
         $response = $this->submitMessage($customer, $conversation, [
             'client_message_id' => $clientMessageId,
@@ -39,13 +45,15 @@ class ConversationMessageControllerTest extends TestCase
         $response
             ->assertOk()
             ->assertJsonPath('data.id', $conversation->id)
-            ->assertJsonPath('data.state', ConversationState::Started->value)
+            ->assertJsonPath('data.state', ConversationState::IdentifyingOrder->value)
             ->assertJsonPath('data.status', ConversationStatus::Active->value)
             ->assertJsonPath('data.available_actions', [])
-            ->assertJsonCount(1, 'data.messages')
+            ->assertJsonCount(2, 'data.messages')
             ->assertJsonPath('data.messages.0.client_message_id', $clientMessageId)
             ->assertJsonPath('data.messages.0.sender', MessageSender::Customer->value)
-            ->assertJsonPath('data.messages.0.content', 'The keyboard arrived with two broken keys.');
+            ->assertJsonPath('data.messages.0.content', 'The keyboard arrived with two broken keys.')
+            ->assertJsonPath('data.messages.1.sender', MessageSender::Assistant->value)
+            ->assertJsonPath('data.messages.1.content', ConversationMessageTemplate::OrderRequested->value);
 
         $this->assertDatabaseHas('conversation_messages', [
             'refund_conversation_id' => $conversation->id,
@@ -56,8 +64,12 @@ class ConversationMessageControllerTest extends TestCase
         $this->assertDatabaseHas('refund_conversations', [
             'id' => $conversation->id,
             'customer_id' => $customer->id,
-            'state' => ConversationState::Started->value,
+            'state' => ConversationState::IdentifyingOrder->value,
             'status' => ConversationStatus::Active->value,
+        ]);
+        $this->assertDatabaseHas('ai_analyses', [
+            'refund_conversation_id' => $conversation->id,
+            'confidence' => 62,
         ]);
     }
 
@@ -90,6 +102,7 @@ class ConversationMessageControllerTest extends TestCase
             'state' => ConversationState::IdentifyingOrder,
         ]);
         $clientMessageId = '76f06743-b329-49a6-b060-a2aa77d34492';
+        $fake = app(FakeRefundConversationAI::class);
 
         $response = $this->submitMessage($customer, $conversation, [
             'client_message_id' => $clientMessageId,
@@ -120,6 +133,7 @@ class ConversationMessageControllerTest extends TestCase
             'subject_id' => $conversation->id,
             'event' => 'conversation.order_identified',
         ]);
+        $this->assertSame(0, $fake->analysisCount());
     }
 
     public function test_item_selection_advances_to_reason_collection_with_reason_actions(): void
@@ -274,7 +288,10 @@ class ConversationMessageControllerTest extends TestCase
             'content' => 'Second refund request.',
         ])->assertOk();
 
-        $this->assertDatabaseCount('conversation_messages', 2);
+        $this->assertSame(2, ConversationMessage::query()
+            ->where('sender', MessageSender::Customer->value)
+            ->count());
+        $this->assertDatabaseCount('ai_analyses', 2);
         $this->assertDatabaseHas('conversation_messages', [
             'refund_conversation_id' => $firstConversation->id,
             'client_message_id' => $clientMessageId,
@@ -332,6 +349,62 @@ class ConversationMessageControllerTest extends TestCase
                 ],
             ]);
         $this->assertDatabaseCount('conversation_messages', 0);
+    }
+
+    #[DataProvider('recoverableAiFailures')]
+    public function test_returns_503_and_retries_without_duplicate_messages_when_ai_analysis_fails(
+        string $exceptionClass,
+        string $message,
+        string $failureType,
+    ): void {
+        $customer = Customer::factory()->create();
+        $conversation = RefundConversation::factory()->for($customer)->create();
+        $clientMessageId = '99999999-9999-4999-8999-999999999999';
+        $fake = app(FakeRefundConversationAI::class);
+        /** @var AIProviderUnavailableException|InvalidAIResponseException $exception */
+        $exception = new $exceptionClass;
+        $fake->failWith($exception);
+        $payload = [
+            'client_message_id' => $clientMessageId,
+            'content' => 'I need help with a refund.',
+        ];
+
+        $failedResponse = $this->submitMessage($customer, $conversation, $payload);
+
+        $failedResponse
+            ->assertServiceUnavailable()
+            ->assertExactJson([
+                'error' => [
+                    'code' => 'SERVICE_UNAVAILABLE',
+                    'message' => $message,
+                    'details' => [],
+                ],
+            ]);
+        $this->assertDatabaseCount('conversation_messages', 0);
+        $this->assertDatabaseCount('ai_analyses', 0);
+        $this->assertDatabaseCount('refund_requests', 0);
+        $failureAudit = $conversation->auditLogs()->where('event', 'ai.analysis.failed')->sole();
+        $this->assertSame($clientMessageId, $failureAudit->metadata['client_message_id'] ?? null);
+        $this->assertSame($failureType, $failureAudit->metadata['failure_type'] ?? null);
+
+        $fake->useScenario(FakeRefundConversationScenario::MissingInformation);
+        $retryResponse = $this->submitMessage($customer, $conversation, $payload);
+
+        $retryResponse->assertOk();
+        $this->assertSame(1, ConversationMessage::query()
+            ->where('refund_conversation_id', $conversation->id)
+            ->where('sender', MessageSender::Customer->value)
+            ->count());
+        $this->assertSame(1, ConversationMessage::query()
+            ->where('refund_conversation_id', $conversation->id)
+            ->where('sender', MessageSender::Assistant->value)
+            ->count());
+        $this->assertSame(1, AiAnalysis::query()
+            ->where('refund_conversation_id', $conversation->id)
+            ->count());
+        $this->assertSame(1, $conversation->auditLogs()
+            ->where('event', 'ai.analysis.completed')
+            ->count());
     }
 
     public function test_duplicate_open_selection_resolves_with_a_system_message_and_remains_retryable(): void
@@ -451,6 +524,25 @@ class ConversationMessageControllerTest extends TestCase
                 ],
                 'selection.value',
                 'The selection.value field is required when selection is present.',
+            ],
+        ];
+    }
+
+    /**
+     * @return array<string, array{class-string<AIProviderUnavailableException|InvalidAIResponseException>, string, string}>
+     */
+    public static function recoverableAiFailures(): array
+    {
+        return [
+            'provider unavailable' => [
+                AIProviderUnavailableException::class,
+                'The AI analysis provider is temporarily unavailable.',
+                'provider_unavailable',
+            ],
+            'invalid provider response' => [
+                InvalidAIResponseException::class,
+                'The AI analysis provider returned an invalid response.',
+                'invalid_response',
             ],
         ];
     }

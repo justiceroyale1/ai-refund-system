@@ -66,7 +66,7 @@ final class ApplyConversationSelection
             }
 
             $lockedConversation->order_id = $order->getKey();
-            $this->stateMachine->transition(
+            $this->stateMachine->advanceTo(
                 $lockedConversation,
                 $this->requirements->nextState($lockedConversation),
             );
@@ -119,7 +119,7 @@ final class ApplyConversationSelection
             }
 
             $lockedConversation->order_item_id = $orderItem->getKey();
-            $this->stateMachine->transition(
+            $this->stateMachine->advanceTo(
                 $lockedConversation,
                 $this->requirements->nextState($lockedConversation),
             );
@@ -154,7 +154,7 @@ final class ApplyConversationSelection
             }
 
             $lockedConversation->setAttribute('reason', $reason);
-            $this->stateMachine->transition(
+            $this->stateMachine->advanceTo(
                 $lockedConversation,
                 $this->requirements->nextState($lockedConversation),
             );

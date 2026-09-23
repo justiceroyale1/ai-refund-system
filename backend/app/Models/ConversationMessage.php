@@ -13,6 +13,7 @@ use Illuminate\Support\Carbon;
 
 /**
  * @property MessageSender $sender
+ * @property string $content
  * @property array<string, mixed>|null $metadata
  * @property Carbon|null $created_at
  */

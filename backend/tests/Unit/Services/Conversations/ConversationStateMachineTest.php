@@ -42,6 +42,69 @@ class ConversationStateMachineTest extends TestCase
         }
     }
 
+    public function test_advance_to_walks_documented_edges_for_a_complete_analysis(): void
+    {
+        $conversation = $this->conversation(ConversationState::Started);
+
+        (new ConversationStateMachine)->advanceTo($conversation, ConversationState::Evaluating);
+
+        $this->assertSame(ConversationState::Evaluating, $conversation->state);
+        $this->assertSame(ConversationStatus::Active, $conversation->status);
+    }
+
+    public function test_advance_to_uses_the_details_branch_when_details_are_required(): void
+    {
+        $conversation = $this->conversation(ConversationState::Started);
+
+        (new ConversationStateMachine)->advanceTo($conversation, ConversationState::CollectingDetails);
+
+        $this->assertSame(ConversationState::CollectingDetails, $conversation->state);
+        $this->assertSame(ConversationStatus::Active, $conversation->status);
+    }
+
+    public function test_advance_to_is_a_no_op_when_already_at_the_target_state(): void
+    {
+        $conversation = $this->conversation(ConversationState::CollectingReason);
+
+        (new ConversationStateMachine)->advanceTo($conversation, ConversationState::CollectingReason);
+
+        $this->assertSame(ConversationState::CollectingReason, $conversation->state);
+        $this->assertSame(ConversationStatus::Active, $conversation->status);
+    }
+
+    public function test_advance_to_rejects_a_backward_transition_without_changing_state(): void
+    {
+        $conversation = $this->conversation(ConversationState::CollectingDetails);
+
+        try {
+            (new ConversationStateMachine)->advanceTo($conversation, ConversationState::IdentifyingItem);
+            $this->fail('A backward transition was accepted.');
+        } catch (ConversationWorkflowException $exception) {
+            $this->assertSame(ApiErrorCode::InvalidConversationTransition, $exception->errorCode());
+            $this->assertSame(ConversationState::CollectingDetails, $conversation->state);
+            $this->assertSame(ConversationStatus::Active, $conversation->status);
+        }
+    }
+
+    public function test_advance_to_cannot_resolve_an_active_conversation(): void
+    {
+        $conversation = $this->conversation(ConversationState::Evaluating);
+
+        try {
+            (new ConversationStateMachine)->advanceTo($conversation, ConversationState::Resolved);
+            $this->fail('Automatic advancement resolved an active conversation.');
+        } catch (ConversationWorkflowException $exception) {
+            $this->assertSame(ApiErrorCode::InvalidConversationTransition, $exception->errorCode());
+            $this->assertSame([
+                'from' => ConversationState::Evaluating->value,
+                'to' => ConversationState::Resolved->value,
+            ], $exception->details());
+            $this->assertSame(ConversationState::Evaluating, $conversation->state);
+            $this->assertSame(ConversationStatus::Active, $conversation->status);
+            $this->assertNull($conversation->resolved_at);
+        }
+    }
+
     public function test_duplicate_resolution_is_the_explicit_active_state_exception(): void
     {
         $this->travelTo('2026-09-22 12:00:00');

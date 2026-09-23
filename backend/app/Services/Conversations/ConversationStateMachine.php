@@ -50,6 +50,29 @@ final class ConversationStateMachine
         }
     }
 
+    public function advanceTo(RefundConversation $conversation, ConversationState $to): void
+    {
+        $from = $conversation->state;
+
+        if ($from === $to) {
+            return;
+        }
+
+        if ($to === ConversationState::Resolved) {
+            throw ConversationWorkflowException::invalidTransition($from, $to);
+        }
+
+        $path = $this->path($from, $to);
+
+        if ($path === null) {
+            throw ConversationWorkflowException::invalidTransition($from, $to);
+        }
+
+        foreach ($path as $next) {
+            $this->transition($conversation, $next);
+        }
+    }
+
     public function resolveAsDuplicate(RefundConversation $conversation): void
     {
         if ($this->status($conversation) === ConversationStatus::Resolved) {
@@ -70,5 +93,36 @@ final class ConversationStateMachine
     private function status(RefundConversation $conversation): ConversationStatus
     {
         return $conversation->status;
+    }
+
+    /**
+     * @param  array<string, true>  $visited
+     * @return list<ConversationState>|null
+     */
+    private function path(
+        ConversationState $from,
+        ConversationState $to,
+        array $visited = [],
+    ): ?array {
+        $visited[$from->value] = true;
+        $transitions = self::TRANSITIONS[$from->value];
+
+        if (in_array($to, $transitions, true)) {
+            return [$to];
+        }
+
+        foreach ($transitions as $next) {
+            if (isset($visited[$next->value])) {
+                continue;
+            }
+
+            $remainingPath = $this->path($next, $to, $visited);
+
+            if ($remainingPath !== null) {
+                return [$next, ...$remainingPath];
+            }
+        }
+
+        return null;
     }
 }

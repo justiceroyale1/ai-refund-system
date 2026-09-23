@@ -4,6 +4,7 @@ namespace App\Enums;
 
 enum ConversationMessageTemplate: string
 {
+    case OrderRequested = 'Which delivered order would you like help with?';
     case OrderItemRequested = 'Which item from this order would you like refunded?';
     case RefundReasonRequested = 'What is the reason for your refund request?';
     case DamagedItemDetailsRequested = 'Please describe the damage.';

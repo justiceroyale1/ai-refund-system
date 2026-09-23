@@ -70,6 +70,7 @@ final class ConversationMessageService
         }
 
         $template = match ($result->conversation->state) {
+            ConversationState::IdentifyingOrder => ConversationMessageTemplate::OrderRequested,
             ConversationState::IdentifyingItem => ConversationMessageTemplate::OrderItemRequested,
             ConversationState::CollectingReason => ConversationMessageTemplate::RefundReasonRequested,
             ConversationState::CollectingDetails => $this->detailsTemplate($result->conversation->reason),
