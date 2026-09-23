@@ -11,6 +11,7 @@ export default defineNuxtConfig({
     'vue-sonner/nuxt',
   ],
   runtimeConfig: {
+    apiBase: '',
     public: {
       apiBase: '',
     },

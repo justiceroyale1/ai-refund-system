@@ -32,6 +32,36 @@ WORKDIR /var/www/html
 
 COPY backend/composer.json backend/composer.lock ./
 
+FROM backend-base AS development
+
+RUN composer install \
+        --no-interaction \
+        --no-progress \
+        --no-scripts \
+        --prefer-dist
+
+COPY backend/ ./
+
+RUN verify-image-env \
+    && composer dump-autoload --no-interaction \
+    && mkdir -p \
+        bootstrap/cache \
+        storage/framework/cache/data \
+        storage/framework/sessions \
+        storage/framework/testing \
+        storage/framework/views \
+        storage/logs \
+    && chown -R www-data:www-data bootstrap/cache storage
+
+COPY docker/backend/entrypoint.sh /usr/local/bin/backend-entrypoint
+
+RUN chmod +x /usr/local/bin/backend-entrypoint
+
+EXPOSE 8000 8080
+
+ENTRYPOINT ["backend-entrypoint"]
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
+
 FROM backend-base AS test
 
 RUN composer install \

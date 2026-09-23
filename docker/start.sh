@@ -22,4 +22,4 @@ exec docker compose \
     --project-directory "$project_root" \
     --env-file "$backend_env" \
     --env-file "$frontend_env" \
-    up --build -d "$@"
+    up --build --watch "$@"

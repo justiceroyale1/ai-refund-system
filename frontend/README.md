@@ -29,7 +29,7 @@ Start the development server on `http://localhost:3000`:
 pnpm dev
 ```
 
-Nuxt reads the Laravel API origin from `NUXT_PUBLIC_API_BASE`. Keep it in the local or root environment file; no service URL or credential is embedded in frontend source.
+Nuxt reads the browser-facing Laravel API origin from `NUXT_PUBLIC_API_BASE`. Server-side requests may use `NUXT_API_BASE` when the backend has a different internal hostname, as it does in Docker Compose. Keep these values in the local environment files; no service URL or credential is embedded in frontend source.
 
 ## Quality checks
 

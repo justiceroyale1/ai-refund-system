@@ -1,5 +1,8 @@
 <template>
   <NuxtRouteAnnouncer />
-  <NuxtPage />
+  <NuxtLayout>
+    <NuxtPage />
+  </NuxtLayout>
+
   <Toaster rich-colors />
 </template>

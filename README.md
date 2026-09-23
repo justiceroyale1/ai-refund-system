@@ -35,12 +35,20 @@ Start the stack with:
 ./docker/start.sh
 ```
 
+The supported startup command stays attached and watches both applications. Nuxt source changes are synchronized into its development container and applied through Vite hot module replacement. Laravel source changes are synchronized into the backend, Horizon, Reverb, and scheduler containers, then those PHP processes restart so they load the updated code. The equivalent direct command is:
+
+```bash
+docker compose up --build --watch
+```
+
+Use `docker compose up --build -d` when a detached stack without source watching is preferred. The Dockerfiles retain explicit `production` targets for production-image builds; Compose intentionally uses the development targets for the local runtime.
+
 The startup script creates both ignored service environment files before Compose loads them:
 
 - Edit `docker/backend/.env` to change Laravel, PostgreSQL, Redis, queue, Reverb, AI provider, and related backend settings.
 - Edit `docker/frontend/.env` to change Nuxt public runtime settings and the published frontend port.
 
-Their safe templates are `docker/backend/.env.example` and `docker/frontend/.env.example`. Rerun the startup script after an environment change so Compose recreates affected containers with the new values.
+Their safe templates are `docker/backend/.env.example` and `docker/frontend/.env.example`. Rerun the startup script after an environment change so Compose recreates affected containers with the new values. Dependency manifest and lockfile changes trigger watched image rebuilds. Migration files are synchronized like other Laravel source, but schema changes remain explicit: run the migration service manually rather than applying database migrations automatically on every edit.
 
 For host-level Laravel commands and quality tooling, the backend directory contains the safe, tracked `backend/.env.example` template. Create the ignored local environment file when it is missing:
 

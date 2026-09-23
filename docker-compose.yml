@@ -26,9 +26,60 @@ x-frontend-env-files: &frontend-env-files
   - path: ./docker/frontend/.env
     required: false
 
+x-backend-watch: &backend-watch
+  watch:
+    - action: sync+restart
+      path: ./backend
+      target: /var/www/html
+      ignore:
+        - .ai/
+        - .agents/
+        - .codex/
+        - .env
+        - .env.*
+        - AGENTS.md
+        - bootstrap/cache/
+        - composer.json
+        - composer.lock
+        - node_modules/
+        - storage/
+        - tests/
+        - vendor/
+    - action: rebuild
+      path: ./backend/composer.json
+    - action: rebuild
+      path: ./backend/composer.lock
+
+x-frontend-watch: &frontend-watch
+  watch:
+    - action: sync
+      path: ./frontend
+      target: /app
+      ignore:
+        - .env
+        - .env.*
+        - .nuxt/
+        - .output/
+        - .cache/
+        - coverage/
+        - node_modules/
+        - package.json
+        - pnpm-lock.yaml
+        - pnpm-workspace.yaml
+        - test-results/
+        - tests/
+    - action: rebuild
+      path: ./frontend/package.json
+    - action: rebuild
+      path: ./frontend/pnpm-lock.yaml
+    - action: rebuild
+      path: ./frontend/pnpm-workspace.yaml
+
 x-backend-service: &backend-service
   image: ai-refund-system-backend:local
-  build: *backend-build
+  build:
+    <<: *backend-build
+    target: development
   restart: unless-stopped
   env_file: *backend-env-files
   volumes:
@@ -50,6 +101,7 @@ services:
 
   backend:
     <<: *backend-service
+    develop: *backend-watch
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -69,8 +121,10 @@ services:
     build:
       context: .
       dockerfile: docker/frontend/Dockerfile
+      target: development
     restart: unless-stopped
     env_file: *frontend-env-files
+    develop: *frontend-watch
     depends_on:
       backend:
         condition: service_healthy
@@ -138,6 +192,7 @@ services:
 
   horizon:
     <<: *backend-service
+    develop: *backend-watch
     command: [ "php", "artisan", "horizon" ]
     depends_on:
       backend:
@@ -153,6 +208,7 @@ services:
 
   reverb:
     <<: *backend-service
+    develop: *backend-watch
     command: [ "php", "artisan", "reverb:start", "--host=0.0.0.0", "--port=8080", "--no-interaction" ]
     depends_on:
       backend:
@@ -170,6 +226,7 @@ services:
 
   scheduler:
     <<: *backend-service
+    develop: *backend-watch
     command: [ "php", "artisan", "schedule:work", "--no-interaction" ]
     depends_on:
       backend:
