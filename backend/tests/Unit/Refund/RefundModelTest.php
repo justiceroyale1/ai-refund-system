@@ -3,6 +3,7 @@
 namespace Tests\Unit\Refund;
 
 use App\Enums\AuditActorType;
+use App\Enums\AuditEvent;
 use App\Enums\DecisionCode;
 use App\Enums\DecisionSource;
 use App\Enums\RefundDecision;
@@ -97,6 +98,7 @@ class RefundModelTest extends TestCase
         $this->assertSame($request->id, $audit->subject_id);
         $this->assertSame($metadata, $audit->metadata);
         $this->assertSame(AuditActorType::User, $audit->actor_type);
+        $this->assertSame(AuditEvent::PolicyEvaluated, $audit->event);
         $this->assertInstanceOf(CarbonInterface::class, $audit->created_at);
     }
 
@@ -130,6 +132,23 @@ class RefundModelTest extends TestCase
     public function test_enums_expose_the_documented_persisted_values(): void
     {
         $this->assertSame(['customer', 'user', 'system'], array_column(AuditActorType::cases(), 'value'));
+        $this->assertSame([
+            'conversation.started',
+            'conversation.order_identified',
+            'conversation.item_identified',
+            'conversation.duplicate_resolved',
+            'ai.analysis.completed',
+            'ai.analysis.failed',
+            'policy.evaluated',
+            'refund_request.approved',
+            'refund_request.denied',
+            'refund_request.escalated',
+            'refund_request.reviewed',
+            'refund.created',
+            'refund.processing',
+            'refund.processed',
+            'refund.failed',
+        ], array_column(AuditEvent::cases(), 'value'));
         $this->assertSame(['approved', 'denied', 'escalated'], array_column(RefundDecision::cases(), 'value'));
         $this->assertSame(['policy_engine', 'human'], array_column(DecisionSource::cases(), 'value'));
         $this->assertSame(['pending', 'processing', 'processed', 'failed'], array_column(RefundStatus::cases(), 'value'));

@@ -9,7 +9,9 @@ use App\Enums\ConversationSelectionType;
 use App\Enums\ConversationState;
 use App\Enums\ConversationStatus;
 use App\Enums\MessageSender;
+use App\Enums\RefundDecision;
 use App\Enums\RefundReason;
+use App\Enums\RefundStatus;
 use App\Exceptions\AI\AIProviderUnavailableException;
 use App\Exceptions\AI\InvalidAIResponseException;
 use App\Models\AiAnalysis;
@@ -351,6 +353,60 @@ class ConversationMessageControllerTest extends TestCase
         $this->assertDatabaseCount('conversation_messages', 0);
     }
 
+    public function test_complete_message_resolves_with_an_approved_request_and_rejects_a_later_message(): void
+    {
+        $customer = Customer::factory()->create();
+        $order = Order::factory()->for($customer)->create([
+            'delivered_at' => now()->subDays(5),
+        ]);
+        $item = OrderItem::factory()->for($order)->create([
+            'unit_price_cents' => 12999,
+            'final_sale' => false,
+        ]);
+        $conversation = RefundConversation::factory()->forOrderItem($item)->create([
+            'state' => ConversationState::CollectingDetails,
+            'reason' => RefundReason::DamagedItem,
+            'reason_details' => null,
+        ]);
+        app(FakeRefundConversationAI::class)->useScenario(FakeRefundConversationScenario::DamagedItem);
+
+        $approvedResponse = $this->submitMessage($customer, $conversation, [
+            'client_message_id' => '93fe03e0-442e-41f9-8198-a00709a680e9',
+            'content' => 'Two keys were broken when the package was opened.',
+        ]);
+        $laterResponse = $this->submitMessage($customer, $conversation, [
+            'client_message_id' => 'da777ac6-34e6-4ffc-9768-e2c5759ac384',
+            'content' => 'Please add another message.',
+        ]);
+
+        $approvedResponse
+            ->assertOk()
+            ->assertJsonPath('data.state', ConversationState::Resolved->value)
+            ->assertJsonPath('data.status', ConversationStatus::Resolved->value)
+            ->assertJsonPath('data.decision', RefundDecision::Approved->value)
+            ->assertJsonPath('data.messages.1.sender', MessageSender::Assistant->value)
+            ->assertJsonPath('data.messages.1.content', ConversationMessageTemplate::RefundApproved->value)
+            ->assertJsonCount(2, 'data.messages');
+        $laterResponse
+            ->assertConflict()
+            ->assertJsonPath('error.code', 'CONVERSATION_ALREADY_RESOLVED');
+        $this->assertDatabaseHas('refund_requests', [
+            'refund_conversation_id' => $conversation->id,
+            'order_item_id' => $item->id,
+            'amount_cents' => 12999,
+            'decision' => RefundDecision::Approved->value,
+        ]);
+        $this->assertDatabaseHas('refunds', [
+            'order_item_id' => $item->id,
+            'amount_cents' => 12999,
+            'status' => RefundStatus::Pending->value,
+        ]);
+        $this->assertSame(1, ConversationMessage::query()
+            ->where('refund_conversation_id', $conversation->id)
+            ->where('sender', MessageSender::Customer->value)
+            ->count());
+    }
+
     #[DataProvider('recoverableAiFailures')]
     public function test_returns_503_and_retries_without_duplicate_messages_when_ai_analysis_fails(
         string $exceptionClass,
@@ -555,7 +611,7 @@ class ConversationMessageControllerTest extends TestCase
         RefundConversation $conversation,
         array $payload,
     ): TestResponse {
-        return $this->withHeader('X-Demo-Customer-Id', (string) $customer->getKey())
+        return $this->withHeader('X-Demo-Customer-Id', (string) $customer->id)
             ->postJson("/api/customer/conversations/{$conversation->id}/messages", $payload);
     }
 }

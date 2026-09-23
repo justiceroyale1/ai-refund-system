@@ -26,7 +26,7 @@ final class CurrentCustomer
 
     public function id(): int
     {
-        return (int) $this->get()->getKey();
+        return $this->get()->id;
     }
 
     /**

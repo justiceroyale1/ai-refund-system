@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Enums\AuditActorType;
+use App\Enums\AuditEvent;
 use App\Enums\ConversationState;
 use App\Enums\ConversationStatus;
 use App\Enums\DecisionCode;
@@ -408,19 +409,19 @@ class DemoScenarioSeeder extends Seeder
         $conversation->auditLogs()->create([
             'actor_type' => AuditActorType::System,
             'actor_id' => null,
-            'event' => 'conversation.started',
+            'event' => AuditEvent::ConversationStarted->value,
             'metadata' => ['order_reference' => $order->reference],
         ]);
         $request->auditLogs()->create([
             'actor_type' => AuditActorType::System,
             'actor_id' => null,
-            'event' => 'refund_request.approved',
+            'event' => AuditEvent::RefundRequestApproved->value,
             'metadata' => ['decision_code' => DecisionCode::DamagedItemEligible->value],
         ]);
         $refund->auditLogs()->create([
             'actor_type' => AuditActorType::System,
             'actor_id' => null,
-            'event' => 'refund.processed',
+            'event' => AuditEvent::RefundProcessed->value,
             'metadata' => ['processor_reference' => 'SIM-REF-1049'],
         ]);
     }

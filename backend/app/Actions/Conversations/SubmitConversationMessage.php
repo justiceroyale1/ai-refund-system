@@ -2,7 +2,10 @@
 
 namespace App\Actions\Conversations;
 
+use App\Actions\Refunds\EvaluateRefundConversation;
 use App\Data\Conversations\ConversationSelection;
+use App\Enums\ConversationSelectionOutcome;
+use App\Enums\ConversationState;
 use App\Enums\ConversationStatus;
 use App\Enums\MessageSender;
 use App\Exceptions\AI\AIProviderException;
@@ -17,6 +20,7 @@ final class SubmitConversationMessage
     public function __construct(
         private readonly ApplyConversationSelection $applyConversationSelection,
         private readonly ProcessConversationAnalysis $processConversationAnalysis,
+        private readonly EvaluateRefundConversation $evaluateRefundConversation,
         private readonly ConversationMessageService $messages,
     ) {}
 
@@ -34,12 +38,12 @@ final class SubmitConversationMessage
                 $selection,
             ): RefundConversation {
                 $lockedConversation = RefundConversation::query()
-                    ->whereKey($conversation->getKey())
+                    ->whereKey($conversation->id)
                     ->lockForUpdate()
                     ->firstOrFail();
 
                 $existingMessage = ConversationMessage::query()
-                    ->where('refund_conversation_id', $lockedConversation->getKey())
+                    ->where('refund_conversation_id', $lockedConversation->id)
                     ->where('sender', MessageSender::Customer->value)
                     ->where('client_message_id', $clientMessageId)
                     ->first();
@@ -63,6 +67,13 @@ final class SubmitConversationMessage
                     ? $this->processConversationAnalysis->handle($lockedConversation, $customerMessage)
                     : $this->applyConversationSelection->handle($lockedConversation, $selection);
                 $this->messages->followUp($result);
+
+                if (
+                    $result->outcome === ConversationSelectionOutcome::Applied
+                    && $result->conversation->state === ConversationState::Evaluating
+                ) {
+                    $this->evaluateRefundConversation->handle($result->conversation);
+                }
 
                 return $result->conversation->refresh();
             });

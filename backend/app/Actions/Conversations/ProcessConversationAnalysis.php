@@ -7,6 +7,7 @@ use App\Data\AI\ConversationContext;
 use App\Data\AI\ConversationContextMessage;
 use App\Data\Conversations\ConversationSelectionResult;
 use App\Enums\AuditActorType;
+use App\Enums\AuditEvent;
 use App\Exceptions\AI\AIProviderException;
 use App\Exceptions\AI\AIProviderUnavailableException;
 use App\Exceptions\AI\InvalidAIResponseException;
@@ -32,7 +33,7 @@ final class ProcessConversationAnalysis
         );
 
         $analysis = $conversation->aiAnalyses()->create([
-            'conversation_message_id' => $customerMessage->getKey(),
+            'conversation_message_id' => $customerMessage->id,
             'provider' => $result->metadata->provider,
             'model' => $result->metadata->model,
             'prompt_version' => $result->metadata->promptVersion,
@@ -55,14 +56,14 @@ final class ProcessConversationAnalysis
     ): void {
         DB::transaction(function () use ($conversation, $clientMessageId, $exception): void {
             $lockedConversation = RefundConversation::query()
-                ->whereKey($conversation->getKey())
+                ->whereKey($conversation->id)
                 ->lockForUpdate()
                 ->firstOrFail();
 
             $lockedConversation->auditLogs()->create([
                 'actor_type' => AuditActorType::System,
                 'actor_id' => null,
-                'event' => 'ai.analysis.failed',
+                'event' => AuditEvent::AiAnalysisFailed->value,
                 'metadata' => [
                     'client_message_id' => $clientMessageId,
                     'failure_type' => $this->failureType($exception),
@@ -77,7 +78,7 @@ final class ProcessConversationAnalysis
     ): ConversationContext {
         $conversation->loadMissing(['order:id,reference', 'orderItem:id,name']);
         $messages = $conversation->messages()
-            ->whereKeyNot($customerMessage->getKey())
+            ->whereKeyNot($customerMessage->id)
             ->get(['id', 'refund_conversation_id', 'sender', 'content'])
             ->map(
                 static fn (ConversationMessage $message): ConversationContextMessage => new ConversationContextMessage(
@@ -106,10 +107,10 @@ final class ProcessConversationAnalysis
         $conversation->auditLogs()->create([
             'actor_type' => AuditActorType::System,
             'actor_id' => null,
-            'event' => 'ai.analysis.completed',
+            'event' => AuditEvent::AiAnalysisCompleted->value,
             'metadata' => [
-                'ai_analysis_id' => $analysis->getKey(),
-                'conversation_message_id' => $customerMessage->getKey(),
+                'ai_analysis_id' => $analysis->id,
+                'conversation_message_id' => $customerMessage->id,
                 'provider' => $analysis->provider,
                 'model' => $analysis->model,
                 'confidence' => $analysis->confidence,

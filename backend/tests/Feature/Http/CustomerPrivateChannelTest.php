@@ -67,6 +67,6 @@ class CustomerPrivateChannelTest extends TestCase
 
     private function withDemoCustomer(Customer $customer): static
     {
-        return $this->withHeader('X-Demo-Customer-Id', (string) $customer->getKey());
+        return $this->withHeader('X-Demo-Customer-Id', (string) $customer->id);
     }
 }

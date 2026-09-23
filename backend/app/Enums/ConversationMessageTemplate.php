@@ -15,4 +15,7 @@ enum ConversationMessageTemplate: string
     case DuplicateItemDetected = 'This item already has an active refund conversation. You can open it or choose another item.';
     case AlternateItemRequested = 'Please choose another item from this order.';
     case DuplicateConversationResolved = 'This request was closed because the selected item is already being handled in another conversation.';
+    case RefundApproved = 'Your refund request has been approved. We will update you when the refund has been processed.';
+    case RefundDenied = 'Your refund request was not approved under the refund policy.';
+    case RefundEscalated = 'Your refund request needs review by our support team. We will update you after it has been reviewed.';
 }

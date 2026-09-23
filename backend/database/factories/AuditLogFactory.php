@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Enums\AuditActorType;
+use App\Enums\AuditEvent;
 use App\Models\AuditLog;
 use App\Models\RefundConversation;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -24,7 +25,7 @@ class AuditLogFactory extends Factory
             'actor_id' => null,
             'subject_type' => RefundConversation::class,
             'subject_id' => RefundConversation::factory(),
-            'event' => 'policy.evaluated',
+            'event' => AuditEvent::PolicyEvaluated->value,
             'metadata' => null,
         ];
     }

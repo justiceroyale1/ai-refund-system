@@ -34,12 +34,12 @@ final class ConversationQuickActions
         return [
             [
                 'type' => ConversationSelectionType::OpenExistingConversation->value,
-                'value' => (int) $existingConversation->getKey(),
+                'value' => $existingConversation->id,
                 'label' => 'Open existing conversation',
             ],
             [
                 'type' => ConversationSelectionType::ChooseAnotherItem->value,
-                'value' => (int) $orderItem->getKey(),
+                'value' => $orderItem->id,
                 'label' => 'Choose another item',
             ],
         ];
@@ -59,7 +59,7 @@ final class ConversationQuickActions
             ->get(['id', 'reference'])
             ->map(fn (Order $order): array => [
                 'type' => ConversationSelectionType::Order->value,
-                'value' => (int) $order->getKey(),
+                'value' => $order->id,
                 'label' => $order->reference,
             ])
             ->values()
@@ -85,7 +85,7 @@ final class ConversationQuickActions
             ->get(['id', 'name'])
             ->map(fn (OrderItem $orderItem): array => [
                 'type' => ConversationSelectionType::OrderItem->value,
-                'value' => (int) $orderItem->getKey(),
+                'value' => $orderItem->id,
                 'label' => $orderItem->name,
             ])
             ->values()

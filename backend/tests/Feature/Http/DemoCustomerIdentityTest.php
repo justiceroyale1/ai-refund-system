@@ -43,7 +43,7 @@ class DemoCustomerIdentityTest extends TestCase
                     $conversation,
                 );
 
-                return ['data' => ['id' => $ownedConversation->getKey()]];
+                return ['data' => ['id' => $ownedConversation->id]];
             });
     }
 
@@ -164,6 +164,6 @@ class DemoCustomerIdentityTest extends TestCase
 
     private function withDemoCustomer(Customer $customer): static
     {
-        return $this->withHeader('X-Demo-Customer-Id', (string) $customer->getKey());
+        return $this->withHeader('X-Demo-Customer-Id', (string) $customer->id);
     }
 }

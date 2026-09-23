@@ -5,6 +5,7 @@ namespace App\Actions\Conversations;
 use App\Data\Conversations\ConversationSelection;
 use App\Data\Conversations\ConversationSelectionResult;
 use App\Enums\AuditActorType;
+use App\Enums\AuditEvent;
 use App\Enums\ConversationMessageTemplate;
 use App\Enums\ConversationSelectionType;
 use App\Enums\ConversationState;
@@ -65,7 +66,7 @@ final class ApplyConversationSelection
                 );
             }
 
-            $lockedConversation->order_id = $order->getKey();
+            $lockedConversation->order_id = $order->id;
             $this->stateMachine->advanceTo(
                 $lockedConversation,
                 $this->requirements->nextState($lockedConversation),
@@ -75,9 +76,9 @@ final class ApplyConversationSelection
             $lockedConversation->auditLogs()->create([
                 'actor_type' => AuditActorType::Customer,
                 'actor_id' => $lockedConversation->customer_id,
-                'event' => 'conversation.order_identified',
+                'event' => AuditEvent::ConversationOrderIdentified->value,
                 'metadata' => [
-                    'order_id' => $order->getKey(),
+                    'order_id' => $order->id,
                     'order_reference' => $order->reference,
                 ],
             ]);
@@ -96,9 +97,9 @@ final class ApplyConversationSelection
 
             $existingConversation = RefundConversation::query()
                 ->where('customer_id', $lockedConversation->customer_id)
-                ->where('order_item_id', $orderItem->getKey())
+                ->where('order_item_id', $orderItem->id)
                 ->where('status', ConversationStatus::Active->value)
-                ->whereKeyNot($lockedConversation->getKey())
+                ->whereKeyNot($lockedConversation->id)
                 ->lockForUpdate()
                 ->first();
 
@@ -113,12 +114,12 @@ final class ApplyConversationSelection
 
                 return ConversationSelectionResult::duplicateDetected(
                     $lockedConversation->refresh(),
-                    (int) $existingConversation->getKey(),
+                    $existingConversation->id,
                     $actions,
                 );
             }
 
-            $lockedConversation->order_item_id = $orderItem->getKey();
+            $lockedConversation->order_item_id = $orderItem->id;
             $this->stateMachine->advanceTo(
                 $lockedConversation,
                 $this->requirements->nextState($lockedConversation),
@@ -128,9 +129,9 @@ final class ApplyConversationSelection
             $lockedConversation->auditLogs()->create([
                 'actor_type' => AuditActorType::Customer,
                 'actor_id' => $lockedConversation->customer_id,
-                'event' => 'conversation.item_identified',
+                'event' => AuditEvent::ConversationItemIdentified->value,
                 'metadata' => [
-                    'order_item_id' => $orderItem->getKey(),
+                    'order_item_id' => $orderItem->id,
                     'sku' => $orderItem->sku,
                 ],
             ]);
@@ -178,7 +179,7 @@ final class ApplyConversationSelection
 
             $existingConversation = RefundConversation::query()
                 ->whereKey($existingConversationId)
-                ->whereKeyNot($lockedConversation->getKey())
+                ->whereKeyNot($lockedConversation->id)
                 ->where('customer_id', $lockedConversation->customer_id)
                 ->where('order_id', $lockedConversation->order_id)
                 ->whereNotNull('order_item_id')
@@ -200,23 +201,23 @@ final class ApplyConversationSelection
                 $lockedConversation,
                 ConversationMessageTemplate::DuplicateConversationResolved,
                 [
-                    'existing_conversation_id' => $existingConversation->getKey(),
+                    'existing_conversation_id' => $existingConversation->id,
                 ],
             );
 
             $lockedConversation->auditLogs()->create([
                 'actor_type' => AuditActorType::Customer,
                 'actor_id' => $lockedConversation->customer_id,
-                'event' => 'conversation.duplicate_resolved',
+                'event' => AuditEvent::ConversationDuplicateResolved->value,
                 'metadata' => [
-                    'existing_conversation_id' => $existingConversation->getKey(),
+                    'existing_conversation_id' => $existingConversation->id,
                     'order_item_id' => $existingConversation->order_item_id,
                 ],
             ]);
 
             return ConversationSelectionResult::existingConversationOpened(
                 $lockedConversation->refresh(),
-                (int) $existingConversation->getKey(),
+                $existingConversation->id,
             );
         });
     }
@@ -251,7 +252,7 @@ final class ApplyConversationSelection
     private function lockConversation(RefundConversation $conversation): RefundConversation
     {
         return RefundConversation::query()
-            ->whereKey($conversation->getKey())
+            ->whereKey($conversation->id)
             ->lockForUpdate()
             ->firstOrFail();
     }

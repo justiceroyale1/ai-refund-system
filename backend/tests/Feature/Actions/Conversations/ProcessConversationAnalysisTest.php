@@ -120,8 +120,14 @@ class ProcessConversationAnalysisTest extends TestCase
     public function test_keeps_an_ambiguous_item_unresolved_and_a_validated_selection_skips_ai(): void
     {
         $customer = Customer::factory()->create();
-        $order = Order::factory()->for($customer)->create(['reference' => 'ORD-2200']);
-        $firstItem = OrderItem::factory()->for($order)->create(['name' => 'USB Cable']);
+        $order = Order::factory()->for($customer)->create([
+            'reference' => 'ORD-2200',
+            'delivered_at' => now()->subDays(5),
+        ]);
+        $firstItem = OrderItem::factory()->for($order)->create([
+            'name' => 'USB Cable',
+            'unit_price_cents' => 12999,
+        ]);
         $secondItem = OrderItem::factory()->for($order)->create(['name' => 'USB Cable']);
         $conversation = RefundConversation::factory()->for($customer)->create();
         $customerMessage = ConversationMessage::factory()->for($conversation)->create([
@@ -157,10 +163,12 @@ class ProcessConversationAnalysisTest extends TestCase
             ),
         );
 
-        $this->assertSame(ConversationState::Evaluating, $selectedConversation->state);
+        $this->assertSame(ConversationState::Resolved, $selectedConversation->state);
         $this->assertSame($firstItem->id, $selectedConversation->order_item_id);
         $this->assertSame(1, $fake->analysisCount());
         $this->assertDatabaseCount('ai_analyses', 1);
+        $this->assertDatabaseCount('refund_requests', 1);
+        $this->assertDatabaseCount('refunds', 1);
     }
 
     public function test_keeps_a_message_that_mentions_multiple_items_unresolved(): void

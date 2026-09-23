@@ -8,6 +8,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property int $confidence
+ * @property bool $prompt_injection_detected
+ * @property bool $conflicting_information
+ */
 #[Fillable(['refund_conversation_id', 'conversation_message_id', 'provider', 'model', 'prompt_version', 'confidence', 'prompt_injection_detected', 'conflicting_information', 'extracted_data', 'raw_response'])]
 class AiAnalysis extends Model
 {

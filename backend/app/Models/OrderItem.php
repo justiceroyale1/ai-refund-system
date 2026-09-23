@@ -10,6 +10,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
+/**
+ * @property int $quantity
+ * @property int $unit_price_cents
+ * @property bool $final_sale
+ */
 #[Fillable(['order_id', 'sku', 'name', 'quantity', 'unit_price_cents', 'final_sale'])]
 class OrderItem extends Model
 {

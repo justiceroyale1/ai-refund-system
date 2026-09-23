@@ -41,7 +41,7 @@ final class ApplyConversationAnalysis
                     $conversation,
                     ConversationSelection::fromUntrusted(
                         ConversationSelectionType::Order->value,
-                        $order->getKey(),
+                        $order->id,
                     ),
                 )->conversation;
             }
@@ -61,7 +61,7 @@ final class ApplyConversationAnalysis
                     $conversation,
                     ConversationSelection::fromUntrusted(
                         ConversationSelectionType::OrderItem->value,
-                        $orderItem->getKey(),
+                        $orderItem->id,
                     ),
                 );
                 $conversation = $itemResult->conversation;
