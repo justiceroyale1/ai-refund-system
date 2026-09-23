@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Contracts\Refunds\RefundPolicy;
+use App\Services\Refunds\DefaultRefundPolicy;
 use Illuminate\Support\ServiceProvider;
 
 class RefundServiceProvider extends ServiceProvider
@@ -11,6 +13,6 @@ class RefundServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        // Refund policy contract bindings belong here as implementations are introduced.
+        $this->app->singleton(RefundPolicy::class, DefaultRefundPolicy::class);
     }
 }
