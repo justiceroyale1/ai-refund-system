@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
+ * @property string $payment_reference
  * @property Carbon|null $delivered_at
  */
 #[Fillable(['customer_id', 'reference', 'payment_reference', 'status', 'ordered_at', 'delivered_at'])]
