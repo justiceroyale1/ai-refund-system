@@ -9,10 +9,15 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Carbon;
 
 /**
+ * @property int $id
  * @property AuditActorType $actor_type
+ * @property int|null $actor_id
+ * @property int $subject_id
  * @property AuditEvent $event
+ * @property Carbon $created_at
  */
 #[Fillable(['actor_type', 'actor_id', 'subject_type', 'subject_id', 'event', 'metadata'])]
 class AuditLog extends Model

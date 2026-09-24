@@ -22,12 +22,18 @@ use Illuminate\Support\Carbon;
  * @property int $order_id
  * @property int $order_item_id
  * @property RefundReason $reason
+ * @property string|null $reason_details
  * @property int $amount_cents
  * @property RefundDecision $initial_decision
  * @property RefundDecision|null $decision
  * @property DecisionSource $decision_source
  * @property DecisionCode $decision_code
+ * @property list<array<string, mixed>> $policy_checks
+ * @property int|null $reviewed_by
+ * @property string|null $review_note
  * @property Carbon|null $decided_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  */
 #[Fillable(['refund_conversation_id', 'customer_id', 'order_id', 'order_item_id', 'reason', 'reason_details', 'amount_cents', 'initial_decision', 'decision', 'decision_source', 'decision_code', 'policy_checks', 'reviewed_by', 'review_note', 'decided_at'])]
 class RefundRequest extends Model

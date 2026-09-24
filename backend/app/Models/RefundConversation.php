@@ -81,6 +81,14 @@ class RefundConversation extends Model
     }
 
     /**
+     * @return HasOne<AiAnalysis, $this>
+     */
+    public function latestAiAnalysis(): HasOne
+    {
+        return $this->hasOne(AiAnalysis::class)->latestOfMany();
+    }
+
+    /**
      * @return HasOne<RefundRequest, $this>
      */
     public function refundRequest(): HasOne

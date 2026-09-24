@@ -7,11 +7,15 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
+ * @property int $conversation_message_id
  * @property int $confidence
  * @property bool $prompt_injection_detected
  * @property bool $conflicting_information
+ * @property array<string, mixed> $extracted_data
+ * @property Carbon $created_at
  */
 #[Fillable(['refund_conversation_id', 'conversation_message_id', 'provider', 'model', 'prompt_version', 'confidence', 'prompt_injection_detected', 'conflicting_information', 'extracted_data', 'raw_response'])]
 class AiAnalysis extends Model

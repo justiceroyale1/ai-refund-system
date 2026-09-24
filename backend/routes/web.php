@@ -21,6 +21,8 @@ Route::prefix('api/admin')
                 ->name('dashboard.show');
             Route::get('/refund-requests', [RefundRequestController::class, 'index'])
                 ->name('refund-requests.index');
+            Route::get('/refund-requests/{refundRequest}', [RefundRequestController::class, 'show'])
+                ->name('refund-requests.show');
             Route::post('/logout', [AdminAuthenticatedSessionController::class, 'destroy'])
                 ->name('logout');
             Route::get('/me', [AdminAuthenticatedSessionController::class, 'show'])
