@@ -23,6 +23,8 @@ Route::prefix('api/admin')
                 ->name('refund-requests.index');
             Route::get('/refund-requests/{refundRequest}', [RefundRequestController::class, 'show'])
                 ->name('refund-requests.show');
+            Route::post('/refund-requests/{refundRequest}/review', [RefundRequestController::class, 'review'])
+                ->name('refund-requests.review');
             Route::post('/logout', [AdminAuthenticatedSessionController::class, 'destroy'])
                 ->name('logout');
             Route::get('/me', [AdminAuthenticatedSessionController::class, 'show'])

@@ -74,4 +74,19 @@ class RefundRequestFactory extends Factory
             'decided_at' => now(),
         ];
     }
+
+    /**
+     * Mark the request as awaiting human review.
+     */
+    public function escalated(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'initial_decision' => RefundDecision::Escalated,
+            'decision' => RefundDecision::Escalated,
+            'decision_source' => DecisionSource::PolicyEngine,
+            'decision_code' => DecisionCode::HighValueReviewRequired,
+            'reviewed_by' => null,
+            'review_note' => null,
+        ]);
+    }
 }

@@ -18,5 +18,7 @@ enum ConversationMessageTemplate: string
     case RefundApproved = 'Your refund request has been approved. We will update you when the refund has been processed.';
     case RefundDenied = 'Your refund request was not approved under the refund policy.';
     case RefundEscalated = 'Your refund request needs review by our support team. We will update you after it has been reviewed.';
+    case RefundApprovedAfterReview = 'Your refund request has been approved by our support team. We will update you when the refund has been processed.';
+    case RefundDeniedAfterReview = 'After review, your refund request was not approved.';
     case RefundProcessed = 'Refund processing completed successfully.';
 }

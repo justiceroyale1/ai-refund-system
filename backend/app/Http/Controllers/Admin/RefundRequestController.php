@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Actions\Refunds\ReviewRefundRequest;
 use App\Enums\RefundDecision;
 use App\Enums\RefundStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ListRefundRequestsRequest;
+use App\Http\Requests\Admin\ReviewRefundRequestRequest;
 use App\Http\Resources\RefundRequestDetailResource;
 use App\Http\Resources\RefundRequestSummaryResource;
 use App\Models\RefundRequest;
@@ -78,6 +80,26 @@ class RefundRequestController extends Controller
     }
 
     public function show(RefundRequest $refundRequest): RefundRequestDetailResource
+    {
+        return $this->detail($refundRequest);
+    }
+
+    public function review(
+        ReviewRefundRequestRequest $request,
+        RefundRequest $refundRequest,
+        ReviewRefundRequest $review,
+    ): RefundRequestDetailResource {
+        $reviewedRequest = $review->handle(
+            $refundRequest,
+            $request->reviewer(),
+            $request->decision(),
+            $request->reviewNote(),
+        );
+
+        return $this->detail($reviewedRequest);
+    }
+
+    private function detail(RefundRequest $refundRequest): RefundRequestDetailResource
     {
         $refundRequest->load([
             'customer:id,name,email',

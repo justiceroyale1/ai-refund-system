@@ -3,6 +3,7 @@
 use App\Enums\Http\ApiErrorCode;
 use App\Exceptions\AI\AIProviderException;
 use App\Exceptions\Conversations\ConversationWorkflowException;
+use App\Exceptions\Refunds\RefundReviewException;
 use App\Http\Middleware\ResolveDemoCustomer;
 use App\Http\Responses\ApiErrorResponse;
 use Illuminate\Auth\AuthenticationException;
@@ -67,6 +68,19 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
         $exceptions->render(function (ConversationWorkflowException $exception, Request $request): ?JsonResponse {
+            if (! ApiErrorResponse::shouldRender($request)) {
+                return null;
+            }
+
+            return ApiErrorResponse::make(
+                $exception->errorCode(),
+                $exception->getMessage(),
+                $exception->details(),
+                $exception->status(),
+            );
+        });
+
+        $exceptions->render(function (RefundReviewException $exception, Request $request): ?JsonResponse {
             if (! ApiErrorResponse::shouldRender($request)) {
                 return null;
             }
