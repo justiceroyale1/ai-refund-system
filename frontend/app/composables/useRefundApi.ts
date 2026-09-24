@@ -9,14 +9,15 @@ import type { DemoCustomer } from '~/types/customer'
 
 type ApiMethod = 'GET' | 'POST'
 
-interface ApiRequestOptions {
+export interface ApiRequestOptions {
   method?: ApiMethod
   query?: Record<string, number | string>
   headers?: Record<string, string>
   body?: unknown
+  credentials?: RequestCredentials
 }
 
-interface ApiTransport {
+export interface ApiTransport {
   <T>(request: string, options?: ApiRequestOptions): Promise<T>
 }
 
@@ -42,7 +43,7 @@ function normalizeBaseUrl(baseUrl: string): string {
   return baseUrl.replace(/\/$/, '')
 }
 
-function normalizeApiError(error: unknown): ApiClientError {
+export function normalizeApiError(error: unknown): ApiClientError {
   if (error instanceof ApiClientError) {
     return error
   }
