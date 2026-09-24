@@ -8,3 +8,4 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Actions/Conversations/SubmitConversationMessage.php | .ai/rules/conversations.md |
 | app/**/*.php, database/**/*.php, tests/**/*.php | .ai/rules/eloquent-model-attributes.md |
 | app/Actions/Refunds/EvaluateRefundConversation.php | .ai/rules/refunds.md |
+| app/Services/Refunds/RefundProcessor.php | .ai/rules/services-refunds.md |

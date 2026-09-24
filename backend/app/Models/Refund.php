@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
@@ -19,6 +20,11 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  * @property RefundStatus $status
  * @property string $processor
  * @property string $idempotency_key
+ * @property string|null $processor_reference
+ * @property int $attempts
+ * @property string|null $last_error
+ * @property Carbon|null $next_retry_at
+ * @property Carbon|null $processed_at
  */
 #[Fillable(['refund_request_id', 'order_item_id', 'amount_cents', 'status', 'processor', 'idempotency_key', 'processor_reference', 'attempts', 'last_error', 'next_retry_at', 'processed_at'])]
 class Refund extends Model

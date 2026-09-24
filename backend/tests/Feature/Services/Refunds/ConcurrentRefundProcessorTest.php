@@ -72,7 +72,11 @@ class ConcurrentRefundProcessorTest extends TestCase
         $this->assertTrue(pcntl_wifexited($processStatus));
         $this->assertSame(0, pcntl_wexitstatus($processStatus), $childResult);
         $this->assertSame(['processed', 'skipped'], $outcomes);
-        $this->assertSame(RefundStatus::Processing, $refund->refresh()->status);
+        $refund->refresh();
+        $this->assertSame(RefundStatus::Processed, $refund->status);
+        $this->assertSame(1, $refund->attempts);
         $this->assertSame(1, $refund->auditLogs()->where('event', AuditEvent::RefundProcessing->value)->count());
+        $this->assertSame(1, $refund->auditLogs()->where('event', AuditEvent::RefundProcessed->value)->count());
+        $this->assertSame(1, $refund->refundRequest->refundConversation->messages()->count());
     }
 }

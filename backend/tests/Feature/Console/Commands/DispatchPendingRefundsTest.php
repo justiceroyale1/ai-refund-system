@@ -3,9 +3,12 @@
 namespace Tests\Feature\Console\Commands;
 
 use App\Console\Commands\DispatchPendingRefunds;
+use App\Contracts\Payments\PaymentProcessor;
+use App\Data\Payments\PaymentRefundResult;
 use App\Enums\RefundStatus;
 use App\Jobs\ProcessRefund;
 use App\Models\Refund;
+use App\Services\Refunds\RefundProcessor;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
@@ -54,6 +57,30 @@ class DispatchPendingRefundsTest extends TestCase
 
         Queue::assertPushed(ProcessRefund::class, 1);
         Queue::assertPushed(ProcessRefund::class, fn (ProcessRefund $job): bool => $job->refundId === $refund->id);
+    }
+
+    public function test_forced_processor_error_is_not_redispatched_automatically(): void
+    {
+        $refund = Refund::factory()->create();
+        $this->mock(PaymentProcessor::class)
+            ->shouldReceive('refund')
+            ->once()
+            ->andReturn(PaymentRefundResult::failed('Test-only processor error.'));
+        app(RefundProcessor::class)->process($refund->id);
+        Queue::fake([ProcessRefund::class]);
+
+        $this->artisan(DispatchPendingRefunds::class)
+            ->expectsOutputToContain('Considered 0 eligible refund(s)')
+            ->assertSuccessful();
+
+        Queue::assertNothingPushed();
+        $this->assertDatabaseHas('refunds', [
+            'id' => $refund->id,
+            'status' => RefundStatus::Processing->value,
+            'attempts' => 1,
+            'last_error' => 'Test-only processor error.',
+            'next_retry_at' => null,
+        ]);
     }
 
     public function test_limit_bounds_each_dispatch_run(): void

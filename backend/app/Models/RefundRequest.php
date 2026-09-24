@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 /**
  * @property int $id
+ * @property int $refund_conversation_id
  * @property int $order_id
  * @property RefundDecision|null $decision
  */

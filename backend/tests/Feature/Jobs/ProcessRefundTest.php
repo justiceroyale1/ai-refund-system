@@ -35,6 +35,7 @@ class ProcessRefundTest extends TestCase
         $this->assertSame(1, $job->tries);
         $this->assertSame(ProcessRefund::TIMEOUT_SECONDS, $job->timeout);
         $this->assertSame(300, $job->uniqueFor);
-        $this->assertSame(RefundStatus::Processing, $refund->refresh()->status);
+        $this->assertSame(RefundStatus::Processed, $refund->refresh()->status);
+        $this->assertSame(1, $refund->attempts);
     }
 }
