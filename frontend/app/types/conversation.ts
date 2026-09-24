@@ -10,6 +10,12 @@ export type ConversationState =
 export type ConversationStatus = 'active' | 'resolved'
 export type RefundDecision = 'approved' | 'denied' | 'escalated'
 export type MessageSender = 'customer' | 'assistant' | 'system'
+export type ConversationSelectionType =
+  | 'order'
+  | 'order_item'
+  | 'refund_reason'
+  | 'open_existing_conversation'
+  | 'choose_another_item'
 
 export interface ConversationOrder {
   id: number
@@ -21,9 +27,28 @@ export interface ConversationOrderItem {
   name: string
 }
 
-export interface ConversationAction extends Record<string, unknown> {
-  type: string
+export interface ConversationAction {
+  type: ConversationSelectionType
+  value: number | string
   label: string
+}
+
+export interface ConversationSelection {
+  type: ConversationSelectionType
+  value: number | string
+}
+
+export interface ConversationMessageSubmission {
+  client_message_id: string
+  content: string
+  selection?: ConversationSelection
+}
+
+export interface OptimisticConversationMessage {
+  clientMessageId: string
+  content: string
+  createdAt: string
+  status: 'sending' | 'failed'
 }
 
 export interface ConversationMessage {

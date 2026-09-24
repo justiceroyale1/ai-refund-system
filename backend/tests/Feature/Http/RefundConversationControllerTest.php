@@ -75,6 +75,54 @@ class RefundConversationControllerTest extends TestCase
             ]);
     }
 
+    public function test_exposes_active_and_resolved_demo_threads_for_every_seeded_customer(): void
+    {
+        $this->travelTo('2026-09-21 12:00:00');
+        $this->seed();
+
+        foreach (Customer::query()->orderBy('id')->get() as $customer) {
+            $history = $this->withDemoCustomer($customer)
+                ->getJson('/api/customer/conversations');
+
+            $history
+                ->assertOk()
+                ->assertJsonCount(2, 'data')
+                ->assertJsonPath('data.0.status', ConversationStatus::Active->value)
+                ->assertJsonPath('data.1.status', ConversationStatus::Resolved->value);
+
+            $activeConversationId = $history->json('data.0.id');
+            $resolvedConversationId = $history->json('data.1.id');
+            $expectedActiveMessageCount = match ($history->json('data.0.state')) {
+                ConversationState::IdentifyingOrder->value => 2,
+                ConversationState::IdentifyingItem->value => 4,
+                ConversationState::CollectingReason->value => 6,
+                ConversationState::CollectingDetails->value => 8,
+                default => 0,
+            };
+
+            $this->withDemoCustomer($customer)
+                ->getJson("/api/customer/conversations/{$activeConversationId}")
+                ->assertOk()
+                ->assertJsonCount($expectedActiveMessageCount, 'data.messages');
+            $resolvedConversation = $this->withDemoCustomer($customer)
+                ->getJson("/api/customer/conversations/{$resolvedConversationId}")
+                ->assertOk()
+                ->assertJsonPath('data.status', ConversationStatus::Resolved->value)
+                ->assertJsonPath('data.decision', fn (mixed $decision): bool => in_array(
+                    $decision,
+                    array_column(RefundDecision::cases(), 'value'),
+                    true,
+                ));
+            $resolvedMessages = $resolvedConversation->json('data.messages');
+            $messageTimestamps = array_column($resolvedMessages, 'created_at');
+            $sortedTimestamps = $messageTimestamps;
+            sort($sortedTimestamps);
+
+            $this->assertGreaterThanOrEqual(10, count($resolvedMessages));
+            $this->assertSame($sortedTimestamps, $messageTimestamps);
+        }
+    }
+
     public function test_creates_an_initial_conversation_and_started_audit_record(): void
     {
         $customer = Customer::factory()->create();

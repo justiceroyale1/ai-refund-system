@@ -1,6 +1,10 @@
 import { toValue, type MaybeRefOrGetter } from 'vue'
 import type { ApiEnvelope, ApiErrorPayload, PaginatedResponse } from '~/types/api'
-import type { RefundConversation, RefundConversationSummary } from '~/types/conversation'
+import type {
+  ConversationMessageSubmission,
+  RefundConversation,
+  RefundConversationSummary,
+} from '~/types/conversation'
 import type { DemoCustomer } from '~/types/customer'
 
 type ApiMethod = 'GET' | 'POST'
@@ -9,6 +13,7 @@ interface ApiRequestOptions {
   method?: ApiMethod
   query?: Record<string, number | string>
   headers?: Record<string, string>
+  body?: unknown
 }
 
 interface ApiTransport {
@@ -26,6 +31,7 @@ export class ApiClientError extends Error {
     message: string,
     public readonly status: number | null = null,
     public readonly code: string | null = null,
+    public readonly details: ApiErrorPayload['error']['details'] = [],
   ) {
     super(message)
     this.name = 'ApiClientError'
@@ -49,6 +55,7 @@ function normalizeApiError(error: unknown): ApiClientError {
       payload?.message ?? 'The request could not be completed.',
       fetchError.statusCode ?? fetchError.status ?? null,
       payload?.code ?? null,
+      payload?.details ?? [],
     )
   }
 
@@ -110,6 +117,21 @@ export function createRefundApiClient(
       const response = await customerRequest<ApiEnvelope<RefundConversation>>(
         '/api/customer/conversations',
         { method: 'POST' },
+      )
+
+      return response.data
+    },
+
+    submitMessage: async (
+      conversationId: number | string,
+      submission: ConversationMessageSubmission,
+    ): Promise<RefundConversation> => {
+      const response = await customerRequest<ApiEnvelope<RefundConversation>>(
+        `/api/customer/conversations/${conversationId}/messages`,
+        {
+          method: 'POST',
+          body: submission,
+        },
       )
 
       return response.data

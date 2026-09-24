@@ -1,58 +1,60 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# AI Refund System Backend
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Laravel owns the refund conversation workflow, deterministic policy decisions, authorization, idempotency, audit history, and refund persistence. PostgreSQL remains authoritative for customer, order, item, and financial facts.
 
-## About Laravel
+## Demo seeders
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+`DatabaseSeeder` runs the base commerce/scenario seeder followed by the conversation seeder. The deterministic dataset contains 15 customers, 30 delivered orders, and two baseline conversations per customer:
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- one active thread at an interactive order, item, reason, or detail-collection stage;
+- one resolved thread with an approved, denied, or escalated refund request.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Active transcripts contain the realistic exchanges leading to their current state, from two bubbles while choosing an order through eight bubbles while supplying details. Resolved transcripts contain the full ten-bubble guided flow from the opening request through the policy outcome; the processed-refund example also contains a system status message.
 
-## Learning Laravel
+Resolved examples are evaluated through the application refund policy so their decisions, policy checks, refunds, messages, and audit records match normal application behavior. Historical customer selections and assistant prompts retain their structured metadata. Stable customer-message UUIDs identify each fixture turn. Repeated seeding backfills only missing turns and does not reset a conversation, rewrite its existing messages, or discard progress after someone continues it.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+Normal local Docker startup runs migrations and these additive seeders automatically. To seed manually inside a running stack:
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+docker compose exec backend php artisan db:seed --force --no-interaction
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+## Resetting the local database
 
-## Contributing
+These commands permanently delete all data in the configured local application database.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Drop all tables and recreate the schema without immediately seeding:
 
-## Code of Conduct
+```bash
+docker compose exec backend php artisan migrate:fresh --force --no-interaction
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Drop all tables, recreate the schema, and rebuild the deterministic demo dataset:
 
-## Security Vulnerabilities
+```bash
+docker compose exec backend php artisan migrate:fresh --seed --force --no-interaction
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+The next normal Compose startup seeds an unseeded schema automatically.
 
-## License
+## Backend quality checks
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+The canonical backend suite runs against the isolated PostgreSQL test database through Docker:
+
+```bash
+composer test
+composer quality
+```
+
+Run focused tests by passing their PHPUnit paths:
+
+```bash
+composer test -- tests/Feature/Database/DatabaseSeederTest.php
+```
+
+Host-level lightweight tests require an ignored `backend/.env` copied from the safe tracked template:
+
+```bash
+cp .env.example .env
+php artisan test --compact
+```

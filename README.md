@@ -53,7 +53,7 @@ Their safe templates are `docker/backend/.env.example` and `docker/frontend/.env
 For host-level Laravel commands and quality tooling, the backend directory contains the safe, tracked `backend/.env.example` template. Create the ignored local environment file when it is missing:
 
 ```bash
-cp backend/.env.example backend/.env
+cp backend/.env.example backend/.env # if it doesn't already exist
 cd backend
 composer quality
 ```
@@ -80,7 +80,51 @@ The application endpoints are:
 
 PostgreSQL is published on `5432` and Redis on `6380` for local development tools. The Redis container still listens on `6379` inside the Compose network. Override `POSTGRES_PORT` or `REDIS_FORWARD_PORT` in `docker/backend/.env` when those host ports are already occupied.
 
-The backend container applies outstanding migrations before it starts serving requests. PostgreSQL data, Redis data, and Laravel runtime storage use named volumes.
+The migration service applies outstanding migrations and then runs the additive demo seeders before the backend starts. Stable fixture identifiers ensure repeated starts add missing records without duplicating fixtures or resetting conversations you have continued. PostgreSQL data, Redis data, and Laravel runtime storage use named volumes.
+
+## Demo conversation data
+
+Every demo customer starts with one interactive active conversation and one resolved historical conversation. The active stages and historical outcomes are intentionally distributed so the customer switcher, conversation history, quick actions, chat bubbles, timestamps, and decision badges can be reviewed without creating data manually. Each transcript contains the realistic guided exchanges that lead to its current state: active examples contain two, four, six, or eight bubbles, and resolved examples contain the complete ten-bubble order, item, reason, details, and outcome flow. The processed-refund example adds a system status bubble.
+
+| Demo customer | Active example | Resolved example |
+| --- | --- | --- |
+| James Munroe | Select an order | Approved damaged item |
+| Amelia Carter | Select an item | Approved incorrect item |
+| Marcus Bennett | Select a refund reason | Denied final-sale item |
+| Nina Patel | Describe item damage | Denied expired refund window |
+| Gabriel Okafor | Select an order | Escalated high-value item |
+| Olivia Chen | Select an item | Escalated changed-mind request |
+| Ethan Williams | Select a refund reason | Escalated missing item |
+| Sophia Rossi | Describe an incorrect item | Approved and processed refund |
+| Lucas Ferreira | Select an order | Escalated other reason |
+| Grace Kim | Select a refund reason | Denied final-sale item |
+| Daniel Brooks | Explain a changed-mind request | Denied prompt-manipulation attempt against a final-sale item |
+| Amina Yusuf | Select an order | Approved damaged item |
+| Noah Thompson | Select an item | Approved incorrect item |
+| Maya Singh | Select a refund reason | Escalated changed-mind request |
+| Henry Collins | Explain another issue | Denied final-sale item |
+
+Active examples are normal workflow records and can be continued with free-form messages or the offered quick actions. Resolved examples include coherent refund requests, policy checks, audit events, and refunds for approved outcomes. Historical selections retain the same structured metadata as normal quick-action messages. Rerunning the seeders backfills only missing fixture turns and preserves every message or state change added while using the demo.
+
+Run the additive seeders manually with:
+
+```bash
+docker compose exec backend php artisan db:seed --force --no-interaction
+```
+
+The following commands are destructive and delete all application data in the configured local database. Drop every table and rerun migrations without immediately seeding:
+
+```bash
+docker compose exec backend php artisan migrate:fresh --force --no-interaction
+```
+
+Drop every table, rerun migrations, and recreate the complete demo dataset:
+
+```bash
+docker compose exec backend php artisan migrate:fresh --seed --force --no-interaction
+```
+
+An unseeded database created by the first command remains empty only until the next normal Compose startup, because the migration service runs the additive seeders automatically.
 
 ## Runtime inspection
 

@@ -12,12 +12,17 @@ describe('refund API client', () => {
       .mockResolvedValueOnce({ data: [], links: {}, meta: {} })
       .mockResolvedValueOnce({ data: { id: 19 } })
       .mockResolvedValueOnce({ data: { id: 20 } })
+      .mockResolvedValueOnce({ data: { id: 20 } })
     const api = createRefundApiClient(transport, 'http://backend.test/', selectedCustomerId)
 
     await api.listConversations()
     selectedCustomerId.value = 8
     await api.getConversation(19)
     await api.createConversation()
+    await api.submitMessage(20, {
+      client_message_id: '6f92fcbb-b660-4fba-b07f-8329381da397',
+      content: 'The keyboard arrived damaged.',
+    })
 
     expect(transport).toHaveBeenNthCalledWith(
       1,
@@ -36,6 +41,18 @@ describe('refund API client', () => {
       3,
       'http://backend.test/api/customer/conversations',
       expect.objectContaining({
+        headers: { 'X-Demo-Customer-Id': '8' },
+        method: 'POST',
+      }),
+    )
+    expect(transport).toHaveBeenNthCalledWith(
+      4,
+      'http://backend.test/api/customer/conversations/20/messages',
+      expect.objectContaining({
+        body: {
+          client_message_id: '6f92fcbb-b660-4fba-b07f-8329381da397',
+          content: 'The keyboard arrived damaged.',
+        },
         headers: { 'X-Demo-Customer-Id': '8' },
         method: 'POST',
       }),
@@ -83,5 +100,29 @@ describe('refund API client', () => {
         'RESOURCE_NOT_FOUND',
       ),
     )
+  })
+
+  it('preserves structured validation details for the message form', async () => {
+    const details = {
+      errors: {
+        content: ['The content field is required.'],
+      },
+    }
+    const transport = vi.fn().mockRejectedValue({
+      status: 422,
+      data: {
+        error: {
+          code: 'VALIDATION_FAILED',
+          message: 'The given data was invalid.',
+          details,
+        },
+      },
+    })
+    const api = createRefundApiClient(transport, '', 4)
+
+    await expect(api.submitMessage(12, {
+      client_message_id: '6f92fcbb-b660-4fba-b07f-8329381da397',
+      content: '',
+    })).rejects.toEqual(expect.objectContaining({ details }))
   })
 })

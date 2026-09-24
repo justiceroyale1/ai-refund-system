@@ -1,8 +1,12 @@
 <script setup lang="ts">
-import { AlertCircle, ArrowLeft, CircleDashed, LoaderCircle, Package } from '@lucide/vue'
-import { computed } from 'vue'
+import { AlertCircle, ArrowLeft, CircleDashed, LoaderCircle, Package, RotateCcw } from '@lucide/vue'
+import { computed, ref } from 'vue'
+import ConversationComposer from '~/components/customer/ConversationComposer.vue'
+import ConversationQuickActions from '~/components/customer/ConversationQuickActions.vue'
+import ConversationTranscript from '~/components/customer/ConversationTranscript.vue'
 import { Button } from '~/components/ui/button'
 import {
+  createConversationMessageSubmission,
   formatConversationDateTime,
   getConversationItemLabel,
   getConversationStatusLabel,
@@ -11,6 +15,10 @@ import {
 } from '~/lib/conversations'
 import { useConversationStore } from '~/stores/conversations'
 import { useCustomerStore } from '~/stores/customer'
+import type {
+  ConversationAction,
+  ConversationMessageSubmission,
+} from '~/types/conversation'
 
 definePageMeta({
   layout: 'customer',
@@ -37,6 +45,10 @@ await useAsyncData(
 )
 
 const conversation = computed(() => conversationStore.currentConversation)
+const draft = ref('')
+const customerName = computed(() => customerStore.selectedCustomer?.name ?? 'Customer')
+const inputDisabled = computed(() => conversationStore.isSubmittingMessage
+  || conversationStore.retrySubmission !== null)
 const toneClasses = computed(() => {
   if (!conversation.value) {
     return ''
@@ -56,10 +68,51 @@ useHead(() => ({
     ? `${getConversationTitle(conversation.value)} · Customer support`
     : 'Conversation · Customer support',
 }))
+
+async function handleSubmission(
+  submission: ConversationMessageSubmission,
+): Promise<void> {
+  const result = await conversationStore.submitMessage(conversationId.value, submission)
+
+  if (!result) {
+    return
+  }
+
+  draft.value = ''
+
+  if (result.redirectConversationId !== null) {
+    await navigateTo(`/support/conversations/${result.redirectConversationId}`)
+  }
+}
+
+async function submitMessage(content: string): Promise<void> {
+  await handleSubmission(createConversationMessageSubmission(content))
+}
+
+async function selectAction(action: ConversationAction): Promise<void> {
+  await handleSubmission(createConversationMessageSubmission(action.label, {
+    type: action.type,
+    value: action.value,
+  }))
+}
+
+async function retryMessage(): Promise<void> {
+  const result = await conversationStore.retryMessage(conversationId.value)
+
+  if (!result) {
+    return
+  }
+
+  draft.value = ''
+
+  if (result.redirectConversationId !== null) {
+    await navigateTo(`/support/conversations/${result.redirectConversationId}`)
+  }
+}
 </script>
 
 <template>
-  <section class="mx-auto flex min-h-full w-full max-w-5xl flex-col p-4 sm:p-6 lg:p-8">
+  <section class="mx-auto flex h-full min-h-full w-full max-w-5xl flex-col p-4 sm:p-6 lg:p-8">
     <div v-if="conversationStore.isLoadingConversation" class="grid flex-1 place-items-center">
       <div class="text-center">
         <LoaderCircle class="mx-auto size-6 animate-spin text-muted-foreground" aria-hidden="true" />
@@ -93,7 +146,7 @@ useHead(() => ({
     </div>
 
     <template v-else-if="conversation">
-      <div class="rounded-xl border bg-card shadow-xs">
+      <div class="shrink-0 rounded-xl border bg-card shadow-xs">
         <div class="flex flex-col gap-4 border-b p-5 sm:flex-row sm:items-start sm:justify-between sm:p-6">
           <div class="min-w-0">
             <p class="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
@@ -136,14 +189,58 @@ useHead(() => ({
         </dl>
       </div>
 
-      <div class="mt-4 grid flex-1 place-items-center rounded-xl border border-dashed bg-background p-8 text-center">
-        <div class="max-w-sm">
-          <h2 class="font-semibold">
-            Conversation ready
-          </h2>
-          <p class="mt-2 text-sm leading-6 text-muted-foreground">
-            Continue the guided refund conversation here. Messaging is added in the next customer-support step.
-          </p>
+      <div class="mt-4 flex min-h-[28rem] flex-1 flex-col overflow-hidden rounded-xl border bg-card shadow-xs">
+        <ConversationTranscript
+          :messages="conversation.messages"
+          :optimistic-message="conversationStore.optimisticMessage"
+          :customer-name="customerName"
+        />
+
+        <div class="shrink-0 border-t bg-muted/20 p-4 sm:p-5">
+          <div class="mx-auto max-w-3xl space-y-3">
+            <div
+              v-if="conversationStore.messageError"
+              class="flex flex-col gap-3 rounded-lg border p-3 text-sm sm:flex-row sm:items-center sm:justify-between"
+              :class="conversationStore.messageErrorKind === 'resolved'
+                ? 'border-amber-300 bg-amber-50 text-amber-900'
+                : 'border-destructive/30 bg-destructive/5 text-destructive'"
+              role="alert"
+            >
+              <span>{{ conversationStore.messageError }}</span>
+              <Button
+                v-if="conversationStore.retrySubmission"
+                type="button"
+                size="sm"
+                variant="outline"
+                :disabled="conversationStore.isSubmittingMessage"
+                @click="retryMessage"
+              >
+                <RotateCcw class="size-4" aria-hidden="true" />
+                Retry
+              </Button>
+            </div>
+
+            <ConversationQuickActions
+              :actions="conversation.available_actions"
+              :disabled="inputDisabled || conversation.status === 'resolved'"
+              @select="selectAction"
+            />
+
+            <ConversationComposer
+              v-model="draft"
+              :disabled="inputDisabled"
+              :submitting="conversationStore.isSubmittingMessage"
+              :resolved="conversation.status === 'resolved'"
+              @submit="submitMessage"
+            />
+
+            <p
+              v-if="conversation.status === 'resolved'"
+              class="text-center text-xs text-muted-foreground"
+            >
+              This conversation is complete. Start a new request if you need help with another item.
+            </p>
+          </div>
         </div>
       </div>
     </template>

@@ -69,7 +69,7 @@ class RefundConversation extends Model
      */
     public function latestMessage(): HasOne
     {
-        return $this->hasOne(ConversationMessage::class)->latestOfMany();
+        return $this->hasOne(ConversationMessage::class)->latestOfMany(['created_at', 'id']);
     }
 
     /**

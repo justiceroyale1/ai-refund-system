@@ -93,6 +93,7 @@ services:
       - php
       - artisan
       - migrate
+      - --seed
       - --force
       - --no-interaction
     depends_on:

@@ -13,6 +13,7 @@ use App\Enums\RefundDecision;
 use App\Enums\RefundReason;
 use App\Enums\RefundStatus;
 use App\Models\AiAnalysis;
+use App\Models\ConversationMessage;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -49,9 +50,10 @@ class DemoScenarioSeeder extends Seeder
             $anchor = CarbonImmutable::now()->startOfDay();
             $customers = $this->createCustomers();
 
-            User::query()->create([
-                'name' => 'Talia Mercer',
+            User::query()->firstOrCreate([
                 'email' => 'talia.mercer@example.test',
+            ], [
+                'name' => 'Talia Mercer',
                 'password' => 'password',
                 'is_admin' => true,
             ]);
@@ -99,7 +101,10 @@ class DemoScenarioSeeder extends Seeder
         $createdCustomers = [];
 
         foreach ($customers as $customerData) {
-            $customer = Customer::query()->create($customerData);
+            $customer = Customer::query()->firstOrCreate(
+                ['email' => $customerData['email']],
+                ['name' => $customerData['name']],
+            );
             $createdCustomers[$customer->email] = $customer;
         }
 
@@ -299,6 +304,7 @@ class DemoScenarioSeeder extends Seeder
                         'sku' => sprintf('SKU-SUP-%02d-A', $number),
                         'name' => $productName,
                         'unit_price_cents' => $price,
+                        'final_sale' => in_array($number, [4, 14], true),
                     ],
                     [
                         'sku' => sprintf('SKU-SUP-%02d-B', $number),
@@ -323,8 +329,9 @@ class DemoScenarioSeeder extends Seeder
     private function createOrder(Customer $customer, array $orderData, CarbonImmutable $anchor): Order
     {
         $deliveredAt = $anchor->subDays($orderData['delivered_days_ago']);
-        $order = $customer->orders()->create([
+        $order = $customer->orders()->firstOrCreate([
             'reference' => $orderData['reference'],
+        ], [
             'payment_reference' => $orderData['payment_reference'],
             'status' => 'delivered',
             'ordered_at' => $deliveredAt->subDays(5),
@@ -332,8 +339,9 @@ class DemoScenarioSeeder extends Seeder
         ]);
 
         foreach ($orderData['items'] as $itemData) {
-            $order->items()->create([
+            $order->items()->firstOrCreate([
                 'sku' => $itemData['sku'],
+            ], [
                 'name' => $itemData['name'],
                 'quantity' => 1,
                 'unit_price_cents' => $itemData['unit_price_cents'],
@@ -346,6 +354,12 @@ class DemoScenarioSeeder extends Seeder
 
     private function createAlreadyRefundedScenario(Order $order, CarbonImmutable $anchor): void
     {
+        if (ConversationMessage::query()
+            ->where('client_message_id', '7c049df3-16f9-4d84-a350-16cbf8f2e416')
+            ->exists()) {
+            return;
+        }
+
         $item = $this->findItem($order, 'SKU-REF-SSD');
         $conversation = RefundConversation::query()->create([
             'customer_id' => $order->customer_id,
@@ -428,6 +442,12 @@ class DemoScenarioSeeder extends Seeder
 
     private function createCrossCustomerScenario(Order $order): void
     {
+        if (ConversationMessage::query()
+            ->where('client_message_id', '6933f8f9-20e8-4b3f-9555-70b935e45080')
+            ->exists()) {
+            return;
+        }
+
         $item = $this->findItem($order, 'SKU-CROSS-SPEAKER');
         $conversation = RefundConversation::query()->create([
             'customer_id' => $order->customer_id,
@@ -450,6 +470,12 @@ class DemoScenarioSeeder extends Seeder
 
     private function createPromptManipulationScenario(Order $order): void
     {
+        if (ConversationMessage::query()
+            ->where('client_message_id', '8ecf242e-cdc7-49d2-8756-a2eac82a32b2')
+            ->exists()) {
+            return;
+        }
+
         $item = $this->findItem($order, 'SKU-PROMPT-STRAP');
         $conversation = RefundConversation::query()->create([
             'customer_id' => $order->customer_id,
