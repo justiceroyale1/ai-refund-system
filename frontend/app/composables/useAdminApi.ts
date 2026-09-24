@@ -5,7 +5,14 @@ import {
   type ApiRequestOptions,
   type ApiTransport,
 } from '~/composables/useRefundApi'
-import type { AdminDashboardMetrics, AdminUser, RefundRequestFilters, RefundRequestPage } from '~/types/admin'
+import type {
+  AdminDashboardMetrics,
+  AdminUser,
+  RefundRequestDetail,
+  RefundRequestFilters,
+  RefundRequestPage,
+  RefundReviewSubmission,
+} from '~/types/admin'
 import type { ApiEnvelope } from '~/types/api'
 
 interface AdminCredentials {
@@ -95,6 +102,30 @@ export function createAdminApiClient(
           page: filters.page,
         },
       })
+    },
+
+    async getRefundRequest(refundRequestId: number): Promise<RefundRequestDetail> {
+      const response = await request<ApiEnvelope<RefundRequestDetail>>(
+        `/api/admin/refund-requests/${refundRequestId}`,
+      )
+
+      return response.data
+    },
+
+    async reviewRefundRequest(
+      refundRequestId: number,
+      submission: RefundReviewSubmission,
+    ): Promise<RefundRequestDetail> {
+      const response = await request<ApiEnvelope<RefundRequestDetail>>(
+        `/api/admin/refund-requests/${refundRequestId}/review`,
+        {
+          method: 'POST',
+          headers: csrfHeaders(),
+          body: submission,
+        },
+      )
+
+      return response.data
     },
   }
 }

@@ -56,6 +56,39 @@ describe('admin API client', () => {
     })
   })
 
+  it('loads a refund case through the protected detail endpoint', async () => {
+    const transport = vi.fn().mockResolvedValue({ data: { id: 42 } })
+    const api = createAdminApiClient(transport, 'http://backend.test', null)
+
+    const refundRequest = await api.getRefundRequest(42)
+
+    expect(transport).toHaveBeenCalledWith(
+      'http://backend.test/api/admin/refund-requests/42',
+      { credentials: 'include' },
+    )
+    expect(refundRequest.id).toBe(42)
+  })
+
+  it('sends the CSRF token and review payload for a human decision', async () => {
+    const transport = vi.fn().mockResolvedValue({ data: { id: 42, decision: 'denied' } })
+    const api = createAdminApiClient(transport, '', 'review%20token')
+
+    await api.reviewRefundRequest(42, {
+      decision: 'denied',
+      review_note: 'Customer history checked.',
+    })
+
+    expect(transport).toHaveBeenCalledWith('/api/admin/refund-requests/42/review', {
+      body: {
+        decision: 'denied',
+        review_note: 'Customer history checked.',
+      },
+      credentials: 'include',
+      headers: { 'X-XSRF-TOKEN': 'review token' },
+      method: 'POST',
+    })
+  })
+
   it('sends the CSRF token when signing out', async () => {
     const transport = vi.fn().mockResolvedValue(undefined)
     const api = createAdminApiClient(transport, '', 'logout-token')
