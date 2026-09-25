@@ -68,6 +68,31 @@ describe('refund API client', () => {
     expect(transport).toHaveBeenCalledWith('/api/demo/customers', undefined)
   })
 
+  it('uses the selected customer for notification history and read state', async () => {
+    const transport = vi.fn()
+      .mockResolvedValueOnce({ data: [], links: {}, meta: { unread_count: 0 } })
+      .mockResolvedValueOnce({ data: { id: 'notification-1' }, meta: { unread_count: 0 } })
+      .mockResolvedValueOnce({ data: { unread_count: 0 } })
+    const api = createRefundApiClient(transport, '', 7)
+
+    await api.listNotifications(2)
+    await api.markNotificationRead('notification-1')
+    await api.markAllNotificationsRead()
+
+    expect(transport).toHaveBeenNthCalledWith(1, '/api/customer/notifications', {
+      headers: { 'X-Demo-Customer-Id': '7' },
+      query: { page: 2 },
+    })
+    expect(transport).toHaveBeenNthCalledWith(2, '/api/customer/notifications/notification-1/read', {
+      headers: { 'X-Demo-Customer-Id': '7' },
+      method: 'PATCH',
+    })
+    expect(transport).toHaveBeenNthCalledWith(3, '/api/customer/notifications/read-all', {
+      headers: { 'X-Demo-Customer-Id': '7' },
+      method: 'PATCH',
+    })
+  })
+
   it('refuses customer requests until an identity is selected', async () => {
     const transport = vi.fn()
     const api = createRefundApiClient(transport, '', null)

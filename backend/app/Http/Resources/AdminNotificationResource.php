@@ -34,7 +34,9 @@ class AdminNotificationResource extends JsonResource
             'title' => (string) ($data['title'] ?? ''),
             'message' => (string) ($data['message'] ?? ''),
             'refund_request_id' => (int) ($data['refund_request_id'] ?? 0),
-            'error_summary' => (string) ($data['error_summary'] ?? ''),
+            'error_summary' => isset($data['error_summary'])
+                ? (string) $data['error_summary']
+                : null,
             'read_at' => $readAt?->toISOString(),
             'created_at' => $createdAt?->toISOString(),
         ];

@@ -14,6 +14,12 @@ import type {
   RefundReviewSubmission,
 } from '~/types/admin'
 import type { ApiEnvelope } from '~/types/api'
+import type {
+  AdminNotification,
+  NotificationPage,
+  NotificationResponse,
+  NotificationUnreadResponse,
+} from '~/types/notification'
 
 interface AdminCredentials {
   email: string
@@ -126,6 +132,28 @@ export function createAdminApiClient(
       )
 
       return response.data
+    },
+
+    listNotifications(page = 1): Promise<NotificationPage<AdminNotification>> {
+      return request('/api/admin/notifications', {
+        query: { page },
+      })
+    },
+
+    markNotificationRead(
+      notificationId: string,
+    ): Promise<NotificationResponse<AdminNotification>> {
+      return request(`/api/admin/notifications/${notificationId}/read`, {
+        method: 'PATCH',
+        headers: csrfHeaders(),
+      })
+    },
+
+    markAllNotificationsRead(): Promise<NotificationUnreadResponse> {
+      return request('/api/admin/notifications/read-all', {
+        method: 'PATCH',
+        headers: csrfHeaders(),
+      })
     },
   }
 }

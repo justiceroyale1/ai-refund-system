@@ -1,14 +1,106 @@
 <script setup lang="ts">
 import { LayoutDashboard, LoaderCircle, LogOut, ShieldCheck } from '@lucide/vue'
+import { onBeforeUnmount, onMounted } from 'vue'
+import { toast } from 'vue-sonner'
 import { Button } from '~/components/ui/button'
+import { isAdminNotificationBroadcast } from '~/lib/notifications'
+import {
+  createNotificationRealtimeConnection,
+  type NotificationRealtimeConnection,
+} from '~/lib/realtime'
+import { useAdminNotificationStore } from '~/stores/adminNotifications'
 import { useAdminSessionStore } from '~/stores/adminSession'
 
 const sessionStore = useAdminSessionStore()
+const notificationStore = useAdminNotificationStore()
+const config = useRuntimeConfig()
+let realtimeConnection: NotificationRealtimeConnection | null = null
+
+await useAsyncData('admin-notification-bootstrap', async () => {
+  await notificationStore.load()
+  return true
+})
+
+function disconnectRealtime(): void {
+  realtimeConnection?.disconnect()
+  realtimeConnection = null
+}
+
+function connectRealtime(adminId: number): void {
+  if (!import.meta.client) {
+    return
+  }
+
+  const port = Number(config.public.reverbPort)
+
+  if (!config.public.reverbAppKey || !config.public.reverbHost || !Number.isInteger(port)) {
+    return
+  }
+
+  disconnectRealtime()
+  realtimeConnection = createNotificationRealtimeConnection({
+    apiBase: config.public.apiBase,
+    appKey: config.public.reverbAppKey,
+    host: config.public.reverbHost,
+    port,
+    scheme: config.public.reverbScheme === 'https' ? 'https' : 'http',
+    channelName: `admins.${adminId}`,
+    onNotification(payload): void {
+      if (!isAdminNotificationBroadcast(payload) || !notificationStore.receiveBroadcast(payload)) {
+        return
+      }
+
+      const showToast = payload.type === 'refund_review_required'
+        ? toast.warning
+        : toast.error
+
+      showToast(payload.title, {
+        description: payload.message,
+        action: {
+          label: 'Review',
+          onClick: () => {
+            const notification = notificationStore.notifications.find(item => item.id === payload.id)
+
+            if (notification) {
+              void openNotification(notification.id)
+            }
+          },
+        },
+      })
+    },
+    onReconnect: () => notificationStore.load(),
+  })
+}
+
+async function openNotification(notificationId: string): Promise<void> {
+  const notification = notificationStore.notifications.find(item => item.id === notificationId)
+
+  if (!notification) {
+    return
+  }
+
+  try {
+    await notificationStore.markRead(notificationId)
+  }
+  finally {
+    await navigateTo(`/admin/refunds/${notification.refund_request_id}`)
+  }
+}
 
 async function logout(): Promise<void> {
+  disconnectRealtime()
+  notificationStore.resetScope()
   await sessionStore.logout()
   await navigateTo('/admin/login')
 }
+
+onMounted(() => {
+  if (sessionStore.admin !== null) {
+    connectRealtime(sessionStore.admin.id)
+  }
+})
+
+onBeforeUnmount(disconnectRealtime)
 </script>
 
 <template>
@@ -37,6 +129,18 @@ async function logout(): Promise<void> {
             <p class="text-sm font-medium">{{ sessionStore.admin?.name }}</p>
             <p class="text-xs text-muted-foreground">{{ sessionStore.admin?.email }}</p>
           </div>
+          <NotificationCenter
+            :notifications="notificationStore.notifications"
+            :unread-count="notificationStore.unreadCount"
+            :loading="notificationStore.isLoading"
+            :error="notificationStore.error"
+            :has-more="notificationStore.hasMore"
+            label="Administrator notifications"
+            @select="openNotification"
+            @mark-all-read="notificationStore.markAllRead()"
+            @retry="notificationStore.load()"
+            @load-more="notificationStore.loadMore()"
+          />
           <Button
             variant="outline"
             size="sm"

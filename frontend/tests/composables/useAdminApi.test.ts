@@ -101,4 +101,31 @@ describe('admin API client', () => {
       method: 'POST',
     })
   })
+
+  it('uses credentialed notification endpoints and CSRF-protected read mutations', async () => {
+    const transport = vi.fn()
+      .mockResolvedValueOnce({ data: [], links: {}, meta: { unread_count: 0 } })
+      .mockResolvedValueOnce({ data: { id: 'notification-1' }, meta: { unread_count: 0 } })
+      .mockResolvedValueOnce({ data: { unread_count: 0 } })
+    const api = createAdminApiClient(transport, '', 'notification-token')
+
+    await api.listNotifications(2)
+    await api.markNotificationRead('notification-1')
+    await api.markAllNotificationsRead()
+
+    expect(transport).toHaveBeenNthCalledWith(1, '/api/admin/notifications', {
+      credentials: 'include',
+      query: { page: 2 },
+    })
+    expect(transport).toHaveBeenNthCalledWith(2, '/api/admin/notifications/notification-1/read', {
+      credentials: 'include',
+      headers: { 'X-XSRF-TOKEN': 'notification-token' },
+      method: 'PATCH',
+    })
+    expect(transport).toHaveBeenNthCalledWith(3, '/api/admin/notifications/read-all', {
+      credentials: 'include',
+      headers: { 'X-XSRF-TOKEN': 'notification-token' },
+      method: 'PATCH',
+    })
+  })
 })

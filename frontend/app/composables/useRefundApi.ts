@@ -6,8 +6,14 @@ import type {
   RefundConversationSummary,
 } from '~/types/conversation'
 import type { DemoCustomer } from '~/types/customer'
+import type {
+  CustomerNotification,
+  NotificationPage,
+  NotificationResponse,
+  NotificationUnreadResponse,
+} from '~/types/notification'
 
-type ApiMethod = 'GET' | 'POST'
+type ApiMethod = 'GET' | 'PATCH' | 'POST'
 
 export interface ApiRequestOptions {
   method?: ApiMethod
@@ -136,6 +142,26 @@ export function createRefundApiClient(
       )
 
       return response.data
+    },
+
+    listNotifications: (page = 1): Promise<NotificationPage<CustomerNotification>> => {
+      return customerRequest('/api/customer/notifications', {
+        query: { page },
+      })
+    },
+
+    markNotificationRead: (
+      notificationId: string,
+    ): Promise<NotificationResponse<CustomerNotification>> => {
+      return customerRequest(`/api/customer/notifications/${notificationId}/read`, {
+        method: 'PATCH',
+      })
+    },
+
+    markAllNotificationsRead: (): Promise<NotificationUnreadResponse> => {
+      return customerRequest('/api/customer/notifications/read-all', {
+        method: 'PATCH',
+      })
     },
   }
 }

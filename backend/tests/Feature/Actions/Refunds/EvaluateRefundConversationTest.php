@@ -13,6 +13,7 @@ use App\Enums\MessageSender;
 use App\Enums\RefundDecision;
 use App\Enums\RefundReason;
 use App\Enums\RefundStatus;
+use App\Events\RefundRequestEscalated;
 use App\Models\AiAnalysis;
 use App\Models\ConversationMessage;
 use App\Models\Customer;
@@ -40,6 +41,7 @@ class EvaluateRefundConversationTest extends TestCase
     ): void {
         $this->travelTo('2026-09-23 12:00:00');
         [$conversation, $item] = $this->completeConversation($itemAttributes, $reason);
+        Event::fake([RefundRequestEscalated::class]);
 
         $request = app(EvaluateRefundConversation::class)->handle($conversation);
 
@@ -64,6 +66,15 @@ class EvaluateRefundConversationTest extends TestCase
             'sender' => MessageSender::Assistant->value,
             'content' => $this->expectedMessage($expectedDecision)->value,
         ]);
+
+        if ($expectedDecision === RefundDecision::Escalated) {
+            Event::assertDispatched(
+                RefundRequestEscalated::class,
+                fn (RefundRequestEscalated $event): bool => $event->refundRequestId === $request->id,
+            );
+        } else {
+            Event::assertNotDispatched(RefundRequestEscalated::class);
+        }
     }
 
     public function test_approved_outcome_uses_authoritative_amount_and_records_complete_audits(): void
@@ -178,10 +189,27 @@ class EvaluateRefundConversationTest extends TestCase
             ->count());
     }
 
+    public function test_repeated_escalated_evaluation_dispatches_one_review_notification_intent(): void
+    {
+        $this->travelTo('2026-09-23 12:00:00');
+        [$conversation] = $this->completeConversation([], RefundReason::ChangedMind);
+        Event::fake([RefundRequestEscalated::class]);
+        $action = app(EvaluateRefundConversation::class);
+
+        $firstRequest = $action->handle($conversation);
+        $secondRequest = $action->handle($conversation->refresh());
+
+        $this->assertSame($firstRequest->id, $secondRequest->id);
+        $this->assertDatabaseCount('refund_requests', 1);
+        $this->assertDatabaseCount('refunds', 0);
+        Event::assertDispatchedTimes(RefundRequestEscalated::class, 1);
+    }
+
     public function test_rolls_back_every_policy_outcome_write_when_a_late_write_fails(): void
     {
         $this->travelTo('2026-09-23 12:00:00');
-        [$conversation] = $this->completeConversation();
+        [$conversation] = $this->completeConversation([], RefundReason::ChangedMind);
+        Event::fake([RefundRequestEscalated::class]);
         Event::listen(QueryExecuted::class, static function (QueryExecuted $query): void {
             if (str_contains($query->sql, 'insert into "conversation_messages"')) {
                 throw new RuntimeException('Simulated assistant-message persistence failure.');
@@ -205,6 +233,7 @@ class EvaluateRefundConversationTest extends TestCase
             'status' => ConversationStatus::Active->value,
             'resolved_at' => null,
         ]);
+        Event::assertNotDispatched(RefundRequestEscalated::class);
     }
 
     /**

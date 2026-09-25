@@ -5,6 +5,7 @@ namespace Tests\Feature\Http;
 use App\Models\RefundRequest;
 use App\Models\User;
 use App\Notifications\Admin\ProcessorErrorNotification;
+use App\Notifications\Admin\RefundReviewRequiredNotification;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Str;
@@ -69,6 +70,24 @@ class AdminNotificationControllerTest extends TestCase
             ->assertJsonPath('meta.per_page', 15)
             ->assertJsonPath('meta.total', 16)
             ->assertJsonPath('meta.unread_count', 16);
+    }
+
+    public function test_serializes_review_required_notification_without_processor_diagnostics(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $refundRequest = RefundRequest::factory()->escalated()->create();
+        $notification = new RefundReviewRequiredNotification($refundRequest->id);
+        $notification->id = (string) Str::uuid();
+        $admin->notifyNow($notification, ['database']);
+
+        $this->actingAs($admin, 'web')
+            ->getJson('/api/admin/notifications')
+            ->assertOk()
+            ->assertJsonPath('data.0.type', 'refund_review_required')
+            ->assertJsonPath('data.0.title', 'Refund request needs review')
+            ->assertJsonPath('data.0.refund_request_id', $refundRequest->id)
+            ->assertJsonPath('data.0.error_summary', null)
+            ->assertJsonPath('meta.unread_count', 1);
     }
 
     public function test_marks_one_owned_notification_read_idempotently_and_returns_the_remaining_count(): void

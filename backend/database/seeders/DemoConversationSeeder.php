@@ -23,6 +23,7 @@ use App\Models\RefundConversation;
 use App\Services\Conversations\ConversationMessageService;
 use App\Services\Conversations\ConversationQuickActions;
 use Carbon\CarbonImmutable;
+use Illuminate\Broadcasting\BroadcastManager;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -58,32 +59,41 @@ class DemoConversationSeeder extends Seeder
         ConversationMessageService $messages,
         EvaluateRefundConversation $evaluateRefundConversation,
     ): void {
-        DB::transaction(function () use ($quickActions, $messages, $evaluateRefundConversation): void {
-            $anchor = CarbonImmutable::now();
+        $broadcastConnection = config('broadcasting.default');
+        config()->set('broadcasting.default', 'null');
+        app(BroadcastManager::class)->forgetDrivers();
 
-            foreach ($this->activeFixtures() as $index => $fixture) {
-                $this->seedActiveFixture(
-                    $fixture,
-                    $index,
-                    $anchor,
-                    $quickActions,
-                    $messages,
-                );
-            }
+        try {
+            DB::transaction(function () use ($quickActions, $messages, $evaluateRefundConversation): void {
+                $anchor = CarbonImmutable::now();
 
-            foreach ($this->resolvedFixtures() as $index => $fixture) {
-                $this->seedResolvedFixture(
-                    $fixture,
-                    $index,
-                    $anchor,
-                    $quickActions,
-                    $messages,
-                    $evaluateRefundConversation,
-                );
-            }
+                foreach ($this->activeFixtures() as $index => $fixture) {
+                    $this->seedActiveFixture(
+                        $fixture,
+                        $index,
+                        $anchor,
+                        $quickActions,
+                        $messages,
+                    );
+                }
 
-            $this->addProcessedRefundStatusMessage($anchor);
-        });
+                foreach ($this->resolvedFixtures() as $index => $fixture) {
+                    $this->seedResolvedFixture(
+                        $fixture,
+                        $index,
+                        $anchor,
+                        $quickActions,
+                        $messages,
+                        $evaluateRefundConversation,
+                    );
+                }
+
+                $this->addProcessedRefundStatusMessage($anchor);
+            });
+        } finally {
+            config()->set('broadcasting.default', $broadcastConnection);
+            app(BroadcastManager::class)->forgetDrivers();
+        }
     }
 
     /**

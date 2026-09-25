@@ -14,6 +14,10 @@ export default defineNuxtConfig({
     apiBase: '',
     public: {
       apiBase: '',
+      reverbAppKey: 'refund-system-local-key',
+      reverbHost: 'localhost',
+      reverbPort: 8080,
+      reverbScheme: 'http',
     },
   },
   shadcn: {

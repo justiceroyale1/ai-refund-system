@@ -13,6 +13,7 @@ use App\Enums\DecisionSource;
 use App\Enums\RefundDecision;
 use App\Enums\RefundReason;
 use App\Enums\RefundStatus;
+use App\Events\RefundRequestEscalated;
 use App\Exceptions\Conversations\ConversationWorkflowException;
 use App\Models\AiAnalysis;
 use App\Models\Order;
@@ -175,6 +176,10 @@ final class EvaluateRefundConversation
                 $lockedConversation,
                 $this->outcomeMessage($policyResult->decision),
             );
+
+            if ($policyResult->decision === RefundDecision::Escalated) {
+                RefundRequestEscalated::dispatch($refundRequest->id);
+            }
 
             return $refundRequest->refresh();
         });
