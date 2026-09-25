@@ -52,9 +52,11 @@ Run focused tests by passing their PHPUnit paths:
 composer test -- tests/Feature/Database/DatabaseSeederTest.php
 ```
 
-Host-level lightweight tests require an ignored `backend/.env` copied from the safe tracked template:
+From the backend directory, establish or repair the ignored `backend/.env` symlink before running host-level lightweight tests:
 
 ```bash
-cp .env.example .env
+../docker/ensure-backend-env-link.sh
 php artisan test --compact
 ```
+
+Edit `docker/backend/.env` as the single source of truth; do not edit `backend/.env` independently.

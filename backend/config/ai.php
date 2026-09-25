@@ -20,8 +20,11 @@ return [
             'driver' => GeminiRefundConversationAI::class,
             'api_key' => env('GEMINI_API_KEY'),
             'model' => env('GEMINI_MODEL', 'gemini-3.8-flash'),
-            'connection_timeout_seconds' => 3,
-            'timeout_seconds' => 15,
+            'connection_timeout_seconds' => (int) env('GEMINI_CONNECT_TIMEOUT_SECONDS', 3),
+            'timeout_seconds' => (int) env('GEMINI_TIMEOUT_SECONDS', 60),
+            'maximum_attempts' => (int) env('GEMINI_MAX_ATTEMPTS', 3),
+            'retry_base_delay_milliseconds' => (int) env('GEMINI_RETRY_BASE_DELAY_MS', 500),
+            'thinking_level' => env('GEMINI_THINKING_LEVEL', 'low'),
         ],
     ],
 ];

@@ -4,14 +4,11 @@ set -eu
 
 project_root="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
 backend_env="$project_root/docker/backend/.env"
-backend_env_example="$project_root/docker/backend/.env.example"
+backend_env_linker="$project_root/docker/ensure-backend-env-link.sh"
 backend_test_env="$project_root/docker/backend/.env.testing"
 backend_test_env_example="$project_root/docker/backend/.env.testing.example"
 
-if [ ! -e "$backend_env" ]; then
-    cp -p "$backend_env_example" "$backend_env"
-    echo "Created docker/backend/.env from docker/backend/.env.example."
-fi
+"$backend_env_linker" "$project_root"
 
 if [ ! -e "$backend_test_env" ]; then
     cp -p "$backend_test_env_example" "$backend_test_env"

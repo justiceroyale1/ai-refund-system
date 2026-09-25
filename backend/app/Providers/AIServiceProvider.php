@@ -34,6 +34,9 @@ class AIServiceProvider extends ServiceProvider
             $maximumRawResponseBytes = $config->get('ai.max_response_bytes');
             $connectionTimeoutSeconds = $config->get('ai.providers.gemini.connection_timeout_seconds');
             $timeoutSeconds = $config->get('ai.providers.gemini.timeout_seconds');
+            $maximumAttempts = $config->get('ai.providers.gemini.maximum_attempts');
+            $retryBaseDelayMilliseconds = $config->get('ai.providers.gemini.retry_base_delay_milliseconds');
+            $thinkingLevel = $config->get('ai.providers.gemini.thinking_level');
 
             if (
                 ! is_string($apiKey)
@@ -41,6 +44,9 @@ class AIServiceProvider extends ServiceProvider
                 || ! is_int($maximumRawResponseBytes)
                 || ! is_int($connectionTimeoutSeconds)
                 || ! is_int($timeoutSeconds)
+                || ! is_int($maximumAttempts)
+                || ! is_int($retryBaseDelayMilliseconds)
+                || ! is_string($thinkingLevel)
             ) {
                 throw new UnsupportedAIProviderException;
             }
@@ -51,6 +57,9 @@ class AIServiceProvider extends ServiceProvider
                 $maximumRawResponseBytes,
                 $connectionTimeoutSeconds,
                 $timeoutSeconds,
+                $maximumAttempts,
+                $retryBaseDelayMilliseconds,
+                $thinkingLevel,
             );
         });
 

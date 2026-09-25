@@ -5,6 +5,7 @@ use App\Http\Controllers\Customer\CustomerNotificationController;
 use App\Http\Controllers\Customer\RefundConversationController;
 use App\Http\Controllers\DemoCustomerController;
 use Illuminate\Support\Facades\Route;
+use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 
 Route::get('/demo/customers', [DemoCustomerController::class, 'index'])
     ->name('demo.customers.index');
@@ -12,6 +13,7 @@ Route::get('/demo/customers', [DemoCustomerController::class, 'index'])
 Route::prefix('customer')
     ->name('customer.')
     ->middleware('demo.customer')
+    ->withoutMiddleware(EnsureFrontendRequestsAreStateful::class)
     ->group(function (): void {
         Route::get('/conversations', [RefundConversationController::class, 'index'])
             ->name('conversations.index');

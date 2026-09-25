@@ -48,12 +48,12 @@ The startup script creates both ignored service environment files before Compose
 - Edit `docker/backend/.env` to change Laravel, PostgreSQL, Redis, queue, Reverb, AI provider, and related backend settings.
 - Edit `docker/frontend/.env` to change Nuxt public runtime settings and the published frontend port.
 
-Their safe templates are `docker/backend/.env.example` and `docker/frontend/.env.example`. Rerun the startup script after an environment change so Compose recreates affected containers with the new values. Dependency manifest and lockfile changes trigger watched image rebuilds. Migration files are synchronized like other Laravel source, but schema changes remain explicit: run the migration service manually rather than applying database migrations automatically on every edit.
+Their safe templates are `docker/backend/.env.example` and `docker/frontend/.env.example`. The startup script maintains `backend/.env` as a relative symlink to `docker/backend/.env`, so host-level Laravel commands and Docker services always read the same backend values. Do not edit `backend/.env` independently. Rerun the startup script after an environment change so Compose recreates affected containers with the new values. Dependency manifest and lockfile changes trigger watched image rebuilds. Migration files are synchronized like other Laravel source, but schema changes remain explicit: run the migration service manually rather than applying database migrations automatically on every edit.
 
-For host-level Laravel commands and quality tooling, the backend directory contains the safe, tracked `backend/.env.example` template. Create the ignored local environment file when it is missing:
+For host-level Laravel commands and quality tooling, establish or repair the ignored environment symlink before entering the backend directory:
 
 ```bash
-cp backend/.env.example backend/.env # if it doesn't already exist
+./docker/ensure-backend-env-link.sh
 cd backend
 composer quality
 ```
@@ -135,8 +135,16 @@ docker compose ps
 docker compose logs --tail=100 backend frontend postgres redis horizon reverb scheduler
 ```
 
+Gemini HTTP failures emit one sanitized backend warning after configured retries are exhausted. Inspect the most recent provider error with:
+
+```bash
+docker compose logs --since=10m backend
+```
+
+The warning includes the HTTP status and Gemini's bounded, redacted structured error message. The application does not attach the raw response body, prompt, conversation content, request payload, successful output, or configured API key.
+
 ## Configuration safety
 
-The generated `docker/backend/.env` and `docker/frontend/.env` files are the local Docker environment files, while `backend/.env` supports host-level Laravel commands. Replace placeholder values locally and never commit real Gemini credentials, application keys, Reverb secrets, production database credentials, or any `.env` file.
+The generated `docker/backend/.env` and `docker/frontend/.env` files are the local Docker environment files. The ignored `backend/.env` symlink exposes the authoritative Docker backend values to host-level Laravel commands. Replace placeholder values locally and never commit real Gemini credentials, application keys, Reverb secrets, production database credentials, or any `.env` file.
 
 Full setup, architecture, testing, security, and walkthrough documentation will be completed alongside the application.

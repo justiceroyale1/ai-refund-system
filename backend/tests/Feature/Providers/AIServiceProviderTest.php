@@ -37,6 +37,15 @@ class AIServiceProviderTest extends TestCase
         $this->assertSame(32768, config('ai.max_response_bytes'));
     }
 
+    public function test_exposes_safe_gemini_transport_defaults(): void
+    {
+        $this->assertSame(3, config('ai.providers.gemini.connection_timeout_seconds'));
+        $this->assertSame(60, config('ai.providers.gemini.timeout_seconds'));
+        $this->assertSame(3, config('ai.providers.gemini.maximum_attempts'));
+        $this->assertSame(500, config('ai.providers.gemini.retry_base_delay_milliseconds'));
+        $this->assertSame('low', config('ai.providers.gemini.thinking_level'));
+    }
+
     public function test_injects_a_custom_positive_response_limit_into_the_fake(): void
     {
         config()->set('ai.default', 'fake');
@@ -98,6 +107,34 @@ class AIServiceProviderTest extends TestCase
             'numeric string' => ['1024'],
             'zero' => [0],
             'negative integer' => [-1],
+        ];
+    }
+
+    #[DataProvider('invalidGeminiTransportConfigurations')]
+    public function test_rejects_invalid_gemini_transport_configuration(string $key, mixed $value): void
+    {
+        config()->set('ai.default', 'gemini');
+        config()->set('ai.providers.gemini.api_key', 'test-gemini-key');
+        config()->set("ai.providers.gemini.{$key}", $value);
+
+        $this->expectException(UnsupportedAIProviderException::class);
+
+        $this->app->make(RefundConversationAI::class);
+    }
+
+    /**
+     * @return array<string, array{string, mixed}>
+     */
+    public static function invalidGeminiTransportConfigurations(): array
+    {
+        return [
+            'zero connection timeout' => ['connection_timeout_seconds', 0],
+            'zero response timeout' => ['timeout_seconds', 0],
+            'zero maximum attempts' => ['maximum_attempts', 0],
+            'excessive maximum attempts' => ['maximum_attempts', 4],
+            'negative retry delay' => ['retry_base_delay_milliseconds', -1],
+            'excessive retry delay' => ['retry_base_delay_milliseconds', 5001],
+            'unsupported thinking level' => ['thinking_level', 'minimal'],
         ];
     }
 
