@@ -66,11 +66,26 @@ class DatabaseSeederTest extends TestCase
             'ORD-1117',
             'ORD-1118',
             'ORD-1119',
+            'ORD-1201',
+            'ORD-1202',
+            'ORD-1203',
+            'ORD-1204',
+            'ORD-1205',
+            'ORD-1206',
+            'ORD-1207',
+            'ORD-1208',
+            'ORD-1209',
+            'ORD-1210',
+            'ORD-1211',
+            'ORD-1212',
+            'ORD-1213',
+            'ORD-1214',
+            'ORD-1215',
         ];
 
         $this->assertSame(15, Customer::query()->count());
-        $this->assertSame(30, Order::query()->count());
-        $this->assertSame(61, OrderItem::query()->count());
+        $this->assertSame(45, Order::query()->count());
+        $this->assertSame(91, OrderItem::query()->count());
         $this->assertSame(30, RefundConversation::query()->count());
         $this->assertSame(227, ConversationMessage::query()->count());
         $this->assertSame(14, AiAnalysis::query()->count());
@@ -78,7 +93,7 @@ class DatabaseSeederTest extends TestCase
         $this->assertSame(5, Refund::query()->count());
         $this->assertSame(62, AuditLog::query()->count());
         $this->assertSame($expectedOrderReferences, Order::query()->orderBy('reference')->pluck('reference')->all());
-        $this->assertSame(30, Order::query()->distinct()->count('payment_reference'));
+        $this->assertSame(45, Order::query()->distinct()->count('payment_reference'));
         $this->assertSame(
             'PAY-DEMO-1042',
             Order::query()->where('reference', 'ORD-1042')->value('payment_reference'),
@@ -106,9 +121,9 @@ class DatabaseSeederTest extends TestCase
             ->get();
         $requests = RefundRequest::query()->with(['refundConversation', 'orderItem', 'refund'])->get();
 
-        $this->assertSame(30, $orders->where('status', 'delivered')->count());
-        $this->assertSame(30, $orders->filter(fn (Order $order): bool => $order->delivered_at !== null)->count());
-        $this->assertSame(30, $orders->filter(fn (Order $order): bool => $order->items->count() >= 2)->count());
+        $this->assertSame(45, $orders->where('status', 'delivered')->count());
+        $this->assertSame(45, $orders->filter(fn (Order $order): bool => $order->delivered_at !== null)->count());
+        $this->assertSame(45, $orders->filter(fn (Order $order): bool => $order->items->count() >= 2)->count());
         $this->assertFalse(OrderItem::query()->where('quantity', '!=', 1)->exists());
 
         foreach ($conversations as $conversation) {
@@ -192,6 +207,43 @@ class DatabaseSeederTest extends TestCase
         $this->assertSame(ConversationStatus::Resolved, $promptConversation->status);
         $this->assertSame(RefundDecision::Denied, $promptConversation->refundRequest->decision);
         $this->assertSame(DecisionCode::FinalSaleItem, $promptConversation->refundRequest->decision_code);
+    }
+
+    public function test_each_customer_has_a_fresh_order_with_two_items_available_for_a_new_conversation(): void
+    {
+        $this->travelTo('2026-09-21 12:00:00');
+
+        $this->seed();
+
+        $customers = Customer::query()
+            ->with([
+                'orders' => fn ($query) => $query
+                    ->whereBetween('reference', ['ORD-1201', 'ORD-1215'])
+                    ->with(['items.refundConversations', 'items.refundRequests', 'items.refund']),
+                'orders.refundConversations',
+                'orders.refundRequests',
+            ])
+            ->get();
+
+        foreach ($customers as $customer) {
+            $this->assertSame(3, $customer->orders()->count());
+
+            $order = $customer->orders->sole();
+
+            $this->assertSame('delivered', $order->status);
+            $this->assertNotNull($order->delivered_at);
+            $this->assertTrue($order->delivered_at->greaterThan(now()->subDays(30)));
+            $this->assertCount(2, $order->items);
+            $this->assertCount(0, $order->refundConversations);
+            $this->assertCount(0, $order->refundRequests);
+
+            foreach ($order->items as $orderItem) {
+                $this->assertFalse($orderItem->final_sale);
+                $this->assertCount(0, $orderItem->refundConversations);
+                $this->assertCount(0, $orderItem->refundRequests);
+                $this->assertNull($orderItem->refund);
+            }
+        }
     }
 
     public function test_each_customer_has_interactive_and_resolved_conversation_examples(): void
@@ -332,6 +384,8 @@ class DatabaseSeederTest extends TestCase
         $this->seed();
 
         $this->assertSame(15, Customer::query()->count());
+        $this->assertSame(45, Order::query()->count());
+        $this->assertSame(91, OrderItem::query()->count());
         $this->assertSame(30, RefundConversation::query()->count());
         $this->assertSame(228, ConversationMessage::query()->count());
         $this->assertSame(15, RefundRequest::query()->count());

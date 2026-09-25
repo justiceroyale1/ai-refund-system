@@ -69,6 +69,10 @@ class DemoScenarioSeeder extends Seeder
                 $this->createOrder($customers[$orderData['customer_email']], $orderData, $anchor);
             }
 
+            foreach ($this->conversationReadyOrders() as $orderData) {
+                $this->createOrder($customers[$orderData['customer_email']], $orderData, $anchor);
+            }
+
             $this->createAlreadyRefundedScenario($orders['ORD-1049'], $anchor);
             $this->createCrossCustomerScenario($orders['ORD-1051']);
             $this->createPromptManipulationScenario($orders['ORD-1052']);
@@ -310,6 +314,79 @@ class DemoScenarioSeeder extends Seeder
                         'sku' => sprintf('SKU-SUP-%02d-B', $number),
                         'name' => 'Reusable Delivery Tote',
                         'unit_price_cents' => 1800 + ($number * 25),
+                    ],
+                ],
+            ];
+        }
+
+        return $orders;
+    }
+
+    /**
+     * @return array<int, array{
+     *     customer_email: string,
+     *     reference: string,
+     *     payment_reference: string,
+     *     delivered_days_ago: int,
+     *     items: array<int, array{sku: string, name: string, unit_price_cents: int}>
+     * }>
+     */
+    private function conversationReadyOrders(): array
+    {
+        $customers = [
+            'james.munroe@example.test',
+            'amelia.carter@example.test',
+            'marcus.bennett@example.test',
+            'nina.patel@example.test',
+            'gabriel.okafor@example.test',
+            'olivia.chen@example.test',
+            'ethan.williams@example.test',
+            'sophia.rossi@example.test',
+            'lucas.ferreira@example.test',
+            'grace.kim@example.test',
+            'daniel.brooks@example.test',
+            'amina.yusuf@example.test',
+            'noah.thompson@example.test',
+            'maya.singh@example.test',
+            'henry.collins@example.test',
+        ];
+        $products = [
+            ['Compact Espresso Grinder', 9800],
+            ['Weighted Sleep Blanket', 11500],
+            ['Smart Indoor Thermometer', 6400],
+            ['Portable Photo Printer', 13200],
+            ['Wireless Charging Stand', 7600],
+            ['Modular Bookshelf', 18400],
+            ['Electric Milk Frother', 4800],
+            ['Travel Power Adapter', 5900],
+            ['Waterproof Picnic Mat', 7200],
+            ['Countertop Ice Maker', 21900],
+            ['Digital Kitchen Scale', 3500],
+            ['Cordless Hand Vacuum', 12800],
+            ['Sunrise Alarm Clock', 8700],
+            ['Yoga Mat Set', 6100],
+            ['Desktop Air Purifier', 15900],
+        ];
+        $orders = [];
+
+        foreach ($products as $index => [$productName, $price]) {
+            $number = $index + 1;
+            $orderNumber = 1200 + $number;
+            $orders[] = [
+                'customer_email' => $customers[$index],
+                'reference' => sprintf('ORD-%04d', $orderNumber),
+                'payment_reference' => sprintf('PAY-DEMO-%04d', $orderNumber),
+                'delivered_days_ago' => ($number % 12) + 2,
+                'items' => [
+                    [
+                        'sku' => sprintf('SKU-FRESH-%02d-A', $number),
+                        'name' => $productName,
+                        'unit_price_cents' => $price,
+                    ],
+                    [
+                        'sku' => sprintf('SKU-FRESH-%02d-B', $number),
+                        'name' => 'Product Care Kit',
+                        'unit_price_cents' => 1400 + ($number * 35),
                     ],
                 ],
             ];
