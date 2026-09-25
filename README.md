@@ -84,6 +84,10 @@ The migration service applies outstanding migrations and then runs the additive 
 
 ## Demo conversation data
 
+### Admin Credentials
+> email: talia.mercer@example.test
+> password: password
+
 Every demo customer starts with one interactive active conversation and one resolved historical conversation. The active stages and historical outcomes are intentionally distributed so the customer switcher, conversation history, quick actions, chat bubbles, timestamps, and decision badges can be reviewed without creating data manually. Each transcript contains the realistic guided exchanges that lead to its current state: active examples contain two, four, six, or eight bubbles, and resolved examples contain the complete ten-bubble order, item, reason, details, and outcome flow. The processed-refund example adds a system status bubble.
 
 | Demo customer | Active example | Resolved example |
