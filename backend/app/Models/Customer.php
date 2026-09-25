@@ -7,12 +7,19 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Notifications\Notifiable;
+use Illuminate\Notifications\Notification;
 
 #[Fillable(['name', 'email'])]
 class Customer extends Model
 {
     /** @use HasFactory<CustomerFactory> */
-    use HasFactory;
+    use HasFactory, Notifiable;
+
+    public function receivesBroadcastNotificationsOn(Notification $notification): string
+    {
+        return 'customers.'.$this->getKey();
+    }
 
     /**
      * @return HasMany<Order, $this>

@@ -11,6 +11,8 @@ use App\Services\Refunds\RefundProcessor;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Illuminate\Notifications\Events\BroadcastNotificationCreated;
+use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
 
 class ProcessRefundTest extends TestCase
@@ -20,6 +22,7 @@ class ProcessRefundTest extends TestCase
     public function test_runs_the_refund_processor_with_unique_queue_configuration(): void
     {
         $refund = Refund::factory()->create();
+        Event::fake([BroadcastNotificationCreated::class]);
         $paymentProcessor = $this->mock(PaymentProcessor::class);
         $paymentProcessor->shouldReceive('refund')
             ->once()
@@ -37,5 +40,7 @@ class ProcessRefundTest extends TestCase
         $this->assertSame(300, $job->uniqueFor);
         $this->assertSame(RefundStatus::Processed, $refund->refresh()->status);
         $this->assertSame(1, $refund->attempts);
+        $this->assertSame(1, $refund->refundRequest->customer->notifications()->count());
+        Event::assertDispatchedTimes(BroadcastNotificationCreated::class, 1);
     }
 }
