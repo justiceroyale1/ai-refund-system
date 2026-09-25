@@ -17,6 +17,24 @@ This project is a production-minded demonstration of an AI-assisted e-commerce r
 └── docker-compose.yml   # Local multi-service runtime
 ```
 
+## Setup
+You'll need an AI key from [Google's AI Studio](https://aistudio.google.com/api-keys).
+**Note: setup billing for your key or you'll keep getting Service Unavailable errors**
+
+Copy the docker/backend/.env.example into docker/backend/.env using:
+```sh
+cp docker/backend/.env.example docker/backend/.env
+```
+
+Next, set the AI key value in the `docker/backend/.env`:
+
+```sh
+AI_PROVIDER=gemini
+AI_MAX_RESPONSE_BYTES=32768
+GEMINI_API_KEY=
+GEMINI_MODEL=gemini-3.8-flash # You can also use a cheaper model like gemini-3.5-flash
+```
+
 ## Local runtime
 
 The local stack contains separate services for:
@@ -32,7 +50,7 @@ The local stack contains separate services for:
 Start the stack with:
 
 ```bash
-./docker/start.sh
+./docker/start.sh # This will start the all services. Leave the terminal open.
 ```
 
 The supported startup command stays attached and watches both applications. Nuxt source changes are synchronized into its development container and applied through Vite hot module replacement. Laravel source changes are synchronized into the backend, Horizon, Reverb, and scheduler containers, then those PHP processes restart so they load the updated code. The equivalent direct command is:
