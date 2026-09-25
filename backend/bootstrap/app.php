@@ -4,6 +4,7 @@ use App\Enums\Http\ApiErrorCode;
 use App\Exceptions\AI\AIProviderException;
 use App\Exceptions\Conversations\ConversationWorkflowException;
 use App\Exceptions\Refunds\RefundReviewException;
+use App\Http\Middleware\ResolveBroadcastIdentity;
 use App\Http\Middleware\ResolveDemoCustomer;
 use App\Http\Responses\ApiErrorResponse;
 use Illuminate\Auth\AuthenticationException;
@@ -27,7 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
         __DIR__.'/../routes/channels.php',
         [
             'prefix' => 'api',
-            'middleware' => ['api', ResolveDemoCustomer::class],
+            'middleware' => ['api', ResolveBroadcastIdentity::class],
         ],
     )
     ->withMiddleware(function (Middleware $middleware): void {

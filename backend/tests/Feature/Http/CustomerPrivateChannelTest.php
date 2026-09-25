@@ -3,6 +3,7 @@
 namespace Tests\Feature\Http;
 
 use App\Models\Customer;
+use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Tests\TestCase;
 
@@ -63,6 +64,23 @@ class CustomerPrivateChannelTest extends TestCase
                     'details' => [],
                 ],
             ]);
+    }
+
+    public function test_demo_customer_identity_remains_authoritative_when_a_web_user_is_also_authenticated(): void
+    {
+        $customer = Customer::factory()->create();
+        $admin = User::factory()->create(['is_admin' => true]);
+
+        $response = $this->actingAs($admin, 'web')
+            ->withDemoCustomer($customer)
+            ->postJson('/api/broadcasting/auth', [
+                'socket_id' => '1234.5678',
+                'channel_name' => "private-customers.{$customer->id}",
+            ]);
+
+        $response
+            ->assertOk()
+            ->assertJsonStructure(['auth']);
     }
 
     private function withDemoCustomer(Customer $customer): static

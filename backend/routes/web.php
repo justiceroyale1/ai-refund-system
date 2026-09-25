@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AdminAuthenticatedSessionController;
 use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\AdminNotificationController;
 use App\Http\Controllers\Admin\RefundRequestController;
 use Illuminate\Support\Facades\Route;
 
@@ -19,6 +20,13 @@ Route::prefix('api/admin')
         Route::middleware(['auth:sanctum', 'can:access-admin'])->group(function (): void {
             Route::get('/dashboard', [AdminDashboardController::class, 'show'])
                 ->name('dashboard.show');
+            Route::get('/notifications', [AdminNotificationController::class, 'index'])
+                ->name('notifications.index');
+            Route::patch('/notifications/{notification}/read', [AdminNotificationController::class, 'read'])
+                ->whereUuid('notification')
+                ->name('notifications.read');
+            Route::patch('/notifications/read-all', [AdminNotificationController::class, 'readAll'])
+                ->name('notifications.read-all');
             Route::get('/refund-requests', [RefundRequestController::class, 'index'])
                 ->name('refund-requests.index');
             Route::get('/refund-requests/{refundRequest}', [RefundRequestController::class, 'show'])
